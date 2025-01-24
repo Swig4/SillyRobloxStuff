@@ -37,10 +37,18 @@ DeepwokenTab:CreateButton("Inject",function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/Deepwoken-Goober.lua'))()
 end)
 
--- AIMBOT
-local AimbotTab = Main:CreateTab("Aimbot")
-AimbotTab:CreateButton("Inject",function()
+-- NON GOOBER
+local NonGooberTab = Main:CreateTab("Non Goober Scripts")
+NonGooberTab:CreateButton("Aimbot",function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/aimbot.lua'))()
+end)
+
+NonGooberTab:CreateButton("Orca",function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/richie0866/orca/master/public/latest.lua'))()
+end)
+
+NonGooberTab:CreateButton("Infinite Yield",function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
 end)
 
 

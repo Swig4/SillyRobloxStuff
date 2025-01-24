@@ -414,56 +414,6 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Default = 30, 
         Rounding = 0
     })
-    
-    Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function()
-        local NPCFolder = workspace:FindFirstChild("NPCs")
-        local function createNameTag(npc)
-            if npc:FindFirstChild("HumanoidRootPart") and not npc:FindFirstChild("NameTag") then
-                local billboard = Instance.new("BillboardGui", npc.HumanoidRootPart)
-                billboard.Name = "NameTag"
-                billboard.Size = UDim2.new(2, 0, 1, 0)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                
-                local label = Instance.new("TextLabel", billboard)
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = Options.NPCESPColor.Value
-                label.TextScaled = false
-                label.TextSize = Options.NPCNameSlider.Value
-                label.Font = Enum.Font.Gotham
-                label.Text = npc.Name
-            end
-        end
-        
-        local function removeNameTag(npc)
-            if npc:FindFirstChild("NameTag") then
-                npc.NameTag:Destroy()
-            end
-        end
-
-        if Toggles.NPCESP.Value then
-            if NPCFolder then
-                for _, npc in pairs(NPCFolder:GetChildren()) do
-                    createNameTag(npc)
-                end
-                NPCFolder.ChildAdded:Connect(createNameTag)
-            end
-        else
-            if NPCFolder then
-                for _, npc in pairs(NPCFolder:GetChildren()) do
-                    removeNameTag(npc)
-                end
-            end
-        end
-    end)
-    Main:AddSlider("NPCNameSlider", {
-        Text = "Npc Name Font Size", 
-        Min = 1, 
-        Max = 70, 
-        Default = 15, 
-        Rounding = 0
-    })
 end
 local CameraBox = VisualTab:AddRightTabbox("Camera") do
     local Main = CameraBox:AddTab("Camera")

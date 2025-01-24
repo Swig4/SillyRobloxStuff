@@ -50,9 +50,11 @@ local function FakeDeath(Toggle)
 
     if not Toggle then
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     else
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     end
 end

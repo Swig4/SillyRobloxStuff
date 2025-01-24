@@ -736,4 +736,5 @@ local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
 end
 local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
+    Main:AddLabel("HP Label Is Not Toggeable")
 end

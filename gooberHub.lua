@@ -27,7 +27,7 @@ end)
 -- UNIVERSAL
 local UniversalTab = Main:CreateTab("Universal")
 UniversalTab:CreateButton("Inject",function()
-    loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/UniversalGoober.lua'))()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/universalGoober.lua'))()
 end)
 
 -- DEEPWOKEN

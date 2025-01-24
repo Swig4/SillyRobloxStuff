@@ -544,7 +544,10 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
             serverHop()
         end
     end)
+end
 
+local BypassesBox = MiscTab:AddLeftTabbox("Bypasses") do 
+    local Main = BypassesBox:AddTab("Bypasses")
     Main:AddToggle("chatBypass", {Text = "Chat Bypass", Default = false}):OnChanged(function()
         if Toggles.chatBypass.Value then
             local Players = game:GetService("Players")
@@ -564,7 +567,7 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
             Toggles.chatBypass.Value = false
         end
     end)
-
+    
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
         if Toggles.chatBypass.Value then
             game:GetService("VoiceChatService"):joinVoice()
@@ -572,9 +575,7 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
             SendNotification("Rejoin The Game To Disable!")
         end
     end)
-
 end
-
 
 -- INFO
 local InfoTab = Window:AddTab("Info")

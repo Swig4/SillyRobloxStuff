@@ -49,9 +49,9 @@ local function teleportToCoordinates(x, y, z, duration)
     bodyVelocity:Destroy()
 end
 
-local function SendNotification(title, message)
+local function SendNotification(message)
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = title,
+        Title = "Goober Client",
         Text = message
     })
 end
@@ -68,7 +68,7 @@ NoClipFirstEnabled = false
 
 -- ON LOAD
 
-SendNotification("Goober Client", "Goober Client Has Successfully Loaded!")
+SendNotification("Goober Client Has Successfully Loaded!")
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
@@ -604,7 +604,7 @@ local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function()
         local link = "https://discord.gg/mushroom"
         setclipboard(link)
-        SendNotification("Goober Hub", "Link Copied To Clipboard!")
+        SendNotification("Link Copied To Clipboard!")
     end)
 end
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do

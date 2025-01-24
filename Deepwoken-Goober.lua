@@ -597,16 +597,21 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
     local Main = MiscBox:AddTab("Server Hop")
 end
 
--- HELP
-local HelpTab = Window:AddTab("Help")
-local CreditsBox = HelpTab:AddLeftTabbox("Credits") do
+-- INFO
+local InfoTab = Window:AddTab("Info")
+local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     local Main = CreditsBox:AddTab("Made By swig5")
+    Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function()
+        local link = "https://discord.gg/mushroom"
+        setclipboard(link)
+        SendNotification("Goober Hub", "Link Copied To Clipboard!")
+    end)
 end
-local KeybindsBox = HelpTab:AddRightTabbox("Keybinds") do
+local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
     local Main = KeybindsBox:AddTab("Goober Client Keybinds")
     Main:AddLabel("Hide GUI - Right CTRL")
 end
-local BugsBox = HelpTab:AddLeftTabbox("Bugs") do
+local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
     Main:AddLabel("Jump Fly Can't Turn Off")
 end

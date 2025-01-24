@@ -29,6 +29,27 @@ local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
 
 -- functions
+local function EnableGodMode()
+    local Player = game.Players.LocalPlayer
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+    local Humanoid = Character:WaitForChild("Humanoid")
+    Humanoid.Health = 100
+    local healthConnection
+    healthConnection = game:GetService("RunService").Heartbeat:Connect(function()
+        if Humanoid.Health < 100 then
+            Humanoid.Health = 100
+        end
+    end)
+    
+    return healthConnection
+end
+
+local function DisableGodMode(healthConnection)
+    if healthConnection then
+        healthConnection:Disconnect()
+    end
+end
+
 local function AllowRagdoll(Toggle)
     local Player = game.Players.LocalPlayer
     local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -51,10 +72,12 @@ local function FakeDeath(Toggle)
     if not Toggle then
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+        umanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     else
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+        umanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     end
 end
@@ -222,6 +245,16 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     end)
     Main:AddToggle("FakeDeath", {Text = "Fake Death"}):OnChanged(function()
         FakeDeath(Toggles.FakeDeath.Value)
+    end)
+    Main:AddToggle("Godmode", {Text = "God Mode"}):OnChanged(function()
+        local Player = game.Players.LocalPlayer
+        local Character = Player.Character or Player.CharacterAdded:Wait()
+        local Humanoid = Character:WaitForChild("Humanoid")
+        if Toggles.Godmode.Value then
+            EnableGodMode()
+        else
+            DisableGodMode()
+        end
     end)
 end
 

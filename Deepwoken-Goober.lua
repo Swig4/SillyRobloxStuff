@@ -21,6 +21,7 @@ local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
 
 local resume = coroutine.resume 
 local create = coroutine.create
@@ -67,7 +68,6 @@ noclip = false
 NoClipFirstEnabled = false
 
 -- ON LOAD
-
 SendNotification("Goober Client Has Successfully Loaded!")
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
@@ -464,68 +464,6 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Default = 15, 
         Rounding = 0
     })
-
-    Main:AddToggle("DepthsESP", {Text = "Whirlpool ESP", Default = false}):AddColorPicker("DepthsESPColor", {Default = Color3.fromRGB(0, 255, 255)}):OnChanged(function()
-        local function createNameTag(model)
-            if not model:FindFirstChild("NameTag") then
-                local billboard = Instance.new("BillboardGui")
-                billboard.Name = "NameTag"
-                billboard.Size = UDim2.new(2, 0, 1, 0)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Parent = model
-                if model:IsA("Model") then
-                    local center = model:GetBoundingBox().Position
-                    billboard.Adornee = Instance.new("Attachment", workspace.Terrain)
-                    billboard.Adornee.Position = center
-                end
-                local label = Instance.new("TextLabel", billboard)
-                label.Size = UDim2.new(1, 0, 1, 0)
-                label.BackgroundTransparency = 1
-                label.TextColor3 = Options.DepthsESPColor.Value
-                label.TextScaled = false
-                label.TextSize = Options.WhirlpoolNameSlider.Value
-                label.Font = Enum.Font.Gotham
-                label.Text = model.Name
-            end
-        end
-    
-        local function removeNameTag(model)
-            if model:FindFirstChild("NameTag") then
-                model.NameTag:Destroy()
-            end
-        end
-    
-        if Toggles.DepthsESP.Value then
-            for _, model in pairs(workspace:GetChildren()) do
-                if model:IsA("Model") and model.Name == "DepthsWhirlpool" then
-                    createNameTag(model)
-                end
-            end
-            workspace.ChildAdded:Connect(function(child)
-                if child:IsA("Model") and child.Name == "DepthsWhirlpool" then
-                    createNameTag(child)
-                end
-            end)
-        else
-            for _, model in pairs(workspace:GetChildren()) do
-                if model:IsA("Model") and model.Name == "DepthsWhirlpool" then
-                    removeNameTag(model)
-                end
-            end
-        end
-    end)
-    
-    Main:AddSlider("WhirlpoolNameSlider", {
-        Text = "Whirlpool Font Size", 
-        Min = 1, 
-        Max = 70, 
-        Default = 15, 
-        Rounding = 0
-    })
-    
-    
-    
 end
 local CameraBox = VisualTab:AddRightTabbox("Camera") do
     local Main = CameraBox:AddTab("Camera")
@@ -566,35 +504,82 @@ local CameraBox = VisualTab:AddRightTabbox("Camera") do
     end)
 end
 
--- TELEPORTING
-local TeleportTab = Window:AddTab("Teleports")
-local DeepwokenPOISBox = TeleportTab:AddLeftTabbox("DeepwokenPOIs") do 
-    local Main = DeepwokenPOISBox:AddTab("Etrean POIs")
-    Main:AddDropdown("locationteleport", {AllowNull = true, Text = "Location", Default = null, Values = {
-        "Lower Erisia",
-        "Isle Of Vigils",
-        "Test"
-    }}):OnChanged(function()
-        if Options.locationteleport.Value == "Lower Erisia" then
-            teleportToCoordinates(-370.8, 195.7, 27.4, 705)
-        elseif Options.locationteleport.Value == "Isle Of Vigils" then
+-- MISC
+local MiscTab = Window:AddTab("Misc")
+local ServerBox = MiscTab:AddLeftTabbox("Server") do 
+    local Main = ServerBox:AddTab("Server")
 
-            teleportToCoordinates(-2439.9, 195.7, 2934.5, 5)
+    Main:AddToggle("serverHop", {Text = "Server Hop", Default = false}):OnChanged(function()
+        if Toggles.serverHop.Value then
+            SendNotification("Scanning For Servers...")
+            local HttpService = game:GetService("HttpService")
+            local TeleportService = game:GetService("TeleportService")
+            local PlaceId = game.PlaceId
 
-        elseif Options.locationteleport.Value == "Test" then
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-            local currentPosition = humanoidRootPart.Position
-            print("Current Location: X = " .. currentPosition.X .. ", Y = " .. currentPosition.Y .. ", Z = " .. currentPosition.Z)
+            local function getServers(cursor)
+                local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+                if cursor then
+                    url = url .. "&cursor=" .. cursor
+                end
+                local response = HttpService:JSONDecode(game:HttpGet(url))
+                return response
+            end
+
+            local function serverHop()
+                local servers = getServers()
+                while servers do
+                    for _, server in ipairs(servers.data) do
+                        if server.playing < server.maxPlayers and server.id ~= game.JobId then
+                            TeleportService:TeleportToPlaceInstance(PlaceId, server.id)
+                            return
+                        end
+                    end
+                    if servers.nextPageCursor then
+                        servers = getServers(servers.nextPageCursor)
+                    else
+                        servers = nil
+                    end
+                end
+                SendNotification("No available servers to join!")
+            end
+            serverHop()
         end
+    end)
+
+    Main:AddToggle("rejoinServer", {Text = "Rejoin Server", Default = false}):OnChanged(function()
+        if Toggles.rejoinServer.Value then
+            SendNotification("Rejoining Server...")
+    
+            local TeleportService = game:GetService("TeleportService")
+            local PlaceId = game.PlaceId
+            local JobId = game.JobId
+            TeleportService:TeleportToPlaceInstance(PlaceId, JobId)
+        end
+    end)    
+    Main:AddToggle("partSpam", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function()
+        if Toggles.partSpam.Value then
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = LocalPlayer.Character.HumanoidRootPart
+                    local part = Instance.new("Part")
+                    part.Size = Vector3.new(4, 1, 4)
+                    part.Anchored = true
+                    part.BrickColor = BrickColor.new("Bright blue")
+                    part.Position = rootPart.Position - Vector3.new(0, (rootPart.Size.Y / 2) + 0.5, 0)
+                    part.Name = "SpamPart"
+                    part.Parent = Workspace
+                end
     end)
 end
 
--- MISC
-local MiscTab = Window:AddTab("Misc")
-local MiscBox = MiscTab:AddLeftTabbox("Misc") do 
-    local Main = MiscBox:AddTab("Server Hop")
+local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
+    local Main = BypassesBox:AddTab("Bypasses")
+    Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
+        if Toggles.voiceUnban.Value then
+            game:GetService("VoiceChatService"):joinVoice()
+        else
+            SendNotification("Rejoin The Game To Disable!")
+        end
+    end)
 end
 
 -- INFO

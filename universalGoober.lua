@@ -651,9 +651,10 @@ local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
         print(Toggles.voiceUnban)
         if Toggles.voiceUnban.Value then
             SendNotification("Bypassing...")
-            task.wait(0.7)
-            game:GetService("VoiceChatService"):joinVoice()
-            SendNotification("Bypassed!")
+            task.delay(2.5, function()
+                game:GetService("VoiceChatService"):joinVoice()
+                SendNotification("Bypassed!")
+            end)            
         else
             SendNotification("Rejoin The Game To Disable!")
         end

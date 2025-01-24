@@ -544,6 +544,27 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
             serverHop()
         end
     end)
+
+    Main:AddToggle("chatBypass", {Text = "Chat Bypass", Default = false}):OnChanged(function()
+        if Toggles.chatBypass.Value then
+            local Players = game:GetService("Players")
+            local LocalPlayer = Players.LocalPlayer
+            local ChatService = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents")
+            local ChatEvent = ChatService:WaitForChild("SayMessageRequest")
+            local connection
+            connection = ChatEvent.OnClientEvent:Connect(function(message, channel)
+                if Toggles.chatBypass.Value then
+                    local bypassedMessage = message:gsub(".", "%1>")
+                    bypassedMessage = bypassedMessage:sub(1, -2)
+                    ChatEvent:FireServer(bypassedMessage, channel)
+                    connection:Disconnect()
+                end
+            end)
+        else
+            Toggles.chatBypass.Value = false
+        end
+    end)
+
 end
 
 

@@ -627,6 +627,7 @@ end
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
+        print(Toggles.voiceUnban)
         if Toggles.voiceUnban.Value then
             game:GetService("VoiceChatService"):joinVoice()
         else
@@ -640,9 +641,11 @@ local InfoTab = Window:AddTab("Info")
 local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     local Main = CreditsBox:AddTab("Made By swig5")
     Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function()
-        local link = "https://discord.gg/mushroom"
-        setclipboard(link)
-        SendNotification("Link Copied To Clipboard!")
+        if Toggles.DiscordBtn.Value then
+            local link = "https://discord.gg/mushroom"
+            setclipboard(link)
+            SendNotification("Link Copied To Clipboard!")
+        end
     end)
 end
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do

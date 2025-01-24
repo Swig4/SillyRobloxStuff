@@ -505,8 +505,8 @@ end
 
 -- MISC
 local MiscTab = Window:AddTab("Misc")
-local MiscBox = MiscTab:AddLeftTabbox("Misc") do 
-    local Main = MiscBox:AddTab("Server Hop")
+local ServerBox = MiscTab:AddLeftTabbox("Server") do 
+    local Main = ServerBox:AddTab("Server")
 
     Main:AddToggle("serverHop", {Text = "Server Hop", Default = false}):OnChanged(function()
         if Toggles.serverHop.Value then
@@ -544,6 +544,17 @@ local MiscBox = MiscTab:AddLeftTabbox("Misc") do
             serverHop()
         end
     end)
+
+    Main:AddToggle("rejoinServer", {Text = "Rejoin Server", Default = false}):OnChanged(function()
+        if Toggles.rejoinServer.Value then
+            SendNotification("Rejoining Server...")
+    
+            local TeleportService = game:GetService("TeleportService")
+            local PlaceId = game.PlaceId
+            local JobId = game.JobId
+            TeleportService:TeleportToPlaceInstance(PlaceId, JobId)
+        end
+    end)    
 end
 
 local BypassesBox = MiscTab:AddLeftTabbox("Bypasses") do 
@@ -567,7 +578,7 @@ local BypassesBox = MiscTab:AddLeftTabbox("Bypasses") do
             Toggles.chatBypass.Value = false
         end
     end)
-    
+
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
         if Toggles.chatBypass.Value then
             game:GetService("VoiceChatService"):joinVoice()

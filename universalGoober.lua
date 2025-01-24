@@ -27,7 +27,6 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
-local healthConnection
 -- functions
 local function AllowRagdoll(Toggle)
     local Player = game.Players.LocalPlayer
@@ -51,15 +50,16 @@ local function FakeDeath(Toggle)
     if not Toggle then
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-        umanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     else
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-        umanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
     end
 end
+
 
 local function startFlying()
     if flyForce then return end

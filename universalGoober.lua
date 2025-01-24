@@ -21,6 +21,7 @@ local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
 
 local resume = coroutine.resume 
 local create = coroutine.create
@@ -555,32 +556,42 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
             TeleportService:TeleportToPlaceInstance(PlaceId, JobId)
         end
     end)    
+
+    local partSpamConnection -- Variable to hold the connection
+
+    Main:AddToggle("partSpam", {Text = "Part Spam", Default = false}):OnChanged(function()
+        if Toggles.partSpam.Value then
+            -- Start spamming parts under the player's feet
+            partSpamConnection = RunService.Heartbeat:Connect(function()
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = LocalPlayer.Character.HumanoidRootPart
+    
+                    -- Create the part
+                    local part = Instance.new("Part")
+                    part.Size = Vector3.new(4, 1, 4) -- Adjust size as needed
+                    part.Anchored = true
+                    part.BrickColor = BrickColor.new("Bright blue")
+                    part.Position = rootPart.Position - Vector3.new(0, (rootPart.Size.Y / 2) + 0.5, 0)
+                    part.Name = "SpamPart"
+    
+                    -- Parent the part to the workspace
+                    part.Parent = Workspace
+                end
+            end)
+        else
+            -- Stop spamming parts when toggled off
+            if partSpamConnection then
+                partSpamConnection:Disconnect()
+                partSpamConnection = nil
+            end
+        end
+    end)
 end
 
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
-    Main:AddToggle("chatBypass", {Text = "Chat Bypass", Default = false}):OnChanged(function()
-        if Toggles.chatBypass.Value then
-            local Players = game:GetService("Players")
-            local LocalPlayer = Players.LocalPlayer
-            local ChatService = game:GetService("ReplicatedStorage"):WaitForChild("DefaultChatSystemChatEvents")
-            local ChatEvent = ChatService:WaitForChild("SayMessageRequest")
-            local connection
-            connection = ChatEvent.OnClientEvent:Connect(function(message, channel)
-                if Toggles.chatBypass.Value then
-                    local bypassedMessage = message:gsub(".", "%1>")
-                    bypassedMessage = bypassedMessage:sub(1, -2)
-                    ChatEvent:FireServer(bypassedMessage, channel)
-                    connection:Disconnect()
-                end
-            end)
-        else
-            Toggles.chatBypass.Value = false
-        end
-    end)
-
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
-        if Toggles.chatBypass.Value then
+        if Toggles.voiceUnban.Value then
             game:GetService("VoiceChatService"):joinVoice()
         else
             SendNotification("Rejoin The Game To Disable!")

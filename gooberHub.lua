@@ -30,10 +30,18 @@ UniversalTab:CreateButton("Inject",function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/universalGoober.lua'))()
 end)
 
+
 -- DEEPWOKEN
 local DeepwokenTab = Main:CreateTab("Deepwoken")
 DeepwokenTab:CreateButton("Inject",function()
     loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/Deepwoken-Goober.lua'))()
 end)
+
+-- AIMBOT
+local AimbotTab = Main:CreateTab("Aimbot")
+AimbotTab:CreateButton("Inject",function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/aimbot.lua'))()
+end)
+
 
 tab:Show()

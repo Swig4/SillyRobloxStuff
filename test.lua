@@ -9,7 +9,7 @@ end
 
 -- variables
 getgenv().SilentAimSettings = Settings
-local MainFileName = "ShroomClient"
+local MainFileName = "GooberClient"
 local SelectedFile, FileToSave = "", ""
 
 local Camera = workspace.CurrentCamera
@@ -18,93 +18,42 @@ local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local HttpService = game:GetService("HttpService")
-
+local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-
-local GetChildren = game.GetChildren
-local GetPlayers = Players.GetPlayers
-local WorldToScreen = Camera.WorldToScreenPoint
-local WorldToViewportPoint = Camera.WorldToViewportPoint
-local GetPartsObscuringTarget = Camera.GetPartsObscuringTarget
-local FindFirstChild = game.FindFirstChild
-local RenderStepped = RunService.RenderStepped
-local GuiInset = GuiService.GetGuiInset
-local GetMouseLocation = UserInputService.GetMouseLocation
 
 local resume = coroutine.resume 
 local create = coroutine.create
 
---[[file handling]] do 
-    if not isfolder(MainFileName) then 
-        makefolder(MainFileName);
-    end
-    
-    if not isfolder(string.format("%s/%s", MainFileName, tostring(game.PlaceId))) then 
-        makefolder(string.format("%s/%s", MainFileName, tostring(game.PlaceId)))
-    end
-end
-
-local Files = listfiles(string.format("%s/%s", "ShroomClient", tostring(game.PlaceId)))
-
 -- functions
-local function GetFiles()
-    local out = {}
-    for i = 1, #Files do
-        local file = Files[i]
-        if file:sub(-4) == '.lua' then
-            local pos = file:find('.lua', 1, true)
-            local start = pos
-            local char = file:sub(pos, pos)
-            while char ~= '/' and char ~= '\\' and char ~= '' do
-                pos = pos - 1
-                char = file:sub(pos, pos)
-            end
 
-            if char == '/' or char == '\\' then
-                table.insert(out, file:sub(pos + 1, start - 1))
-            end
-        end
+local function teleportToCoordinates(x, y, z, duration)
+    local player = game.Players.LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+    bodyVelocity.Parent = humanoidRootPart
+
+    local startPosition = humanoidRootPart.Position
+    local targetPosition = Vector3.new(x, y, z)
+    local startTime = tick()
+    while (humanoidRootPart.Position - targetPosition).Magnitude > 0.1 do
+        local elapsed = tick() - startTime
+        local progress = math.min(elapsed / duration, 1)
+        local newPosition = startPosition:Lerp(targetPosition, progress)
+        humanoidRootPart.CFrame = CFrame.new(newPosition)
+        wait(0.03)
     end
-    
-    return out
+    bodyVelocity:Destroy()
 end
 
-local function UpdateFile(FileName)
-    assert(FileName or FileName == "string", "oopsies");
-    writefile(string.format("%s/%s/%s.lua", MainFileName, tostring(game.PlaceId), FileName), HttpService:JSONEncode(SilentAimSettings))
-end
-
-local function LoadFile(FileName)
-    assert(FileName or FileName == "string", "oopsies");
-    
-    local File = string.format("%s/%s/%s.lua", MainFileName, tostring(game.PlaceId), FileName)
-    local ConfigData = HttpService:JSONDecode(readfile(File))
-    for Index, Value in next, ConfigData do
-        SilentAimSettings[Index] = Value
-    end
-end
-
-local function getPositionOnScreen(Vector)
-    local Vec3, OnScreen = WorldToScreen(Camera, Vector)
-    return Vector2.new(Vec3.X, Vec3.Y), OnScreen
-end
-
-local function ValidateArguments(Args, RayMethod)
-    local Matches = 0
-    if #Args < RayMethod.ArgCountRequired then
-        return false
-    end
-    for Pos, Argument in next, Args do
-        if typeof(Argument) == RayMethod.Args[Pos] then
-            Matches = Matches + 1
-        end
-    end
-    return Matches >= RayMethod.ArgCountRequired
-end
-
-local function getMousePosition()
-    return GetMouseLocation(UserInputService)
+local function SendNotification(title, message)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = title,
+        Text = message
+    })
 end
 
 -- ui creating & handling
@@ -115,21 +64,41 @@ Library.AccentColor = Color3.fromRGB(49, 169, 246)
 local Window = Library:CreateWindow({Title = 'Goober Client | Made By: swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
 
 noclip = false
+NoClipFirstEnabled = false
+
+-- ON LOAD
+
+SendNotification("Script Loaded", "Goober Client has successfully loaded!")
+
+game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
+    Character:WaitForChild("HumanoidRootPart")
+    ResetCollisions(Character)
+end)
+
+local function ResetCollisions(Character)
+    for _, part in pairs(Character:GetChildren()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = true
+        end
+    end
+end
 
 game:GetService('RunService').Stepped:connect(function()
     local Character = game.Players.LocalPlayer.Character
     if Character then
         local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
-        if noclip and HumanoidRootPart then
-            for _, part in pairs(Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
+        if NoClipFirstEnabled then
+            if noclip and HumanoidRootPart then
+                for _, part in pairs(Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
                 end
-            end
-        else
-            for _, part in pairs(Character:GetChildren()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
+            else
+                for _, part in pairs(Character:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
                 end
             end
         end
@@ -142,23 +111,24 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     local Main = MainBOX:AddTab("Main")
     Main:AddToggle("Phase", {Text = "Phase"}):OnChanged(function()
         noclip = Toggles.Phase.Value
+        if not NoClipFirstEnabled then
+            NoClipFirstEnabled = true
+        end
     end)
     Main:AddToggle("AntiRagdoll", {Text = "Anti Ragdoll"}):OnChanged(function()
         local Player = game.Players.LocalPlayer
         local Character = Player.Character or Player.CharacterAdded:Wait()
         local Humanoid = Character:WaitForChild("Humanoid")
+        
         if Toggles.AntiRagdoll.Value then
-            game:GetService("RunService").Heartbeat:Connect(function()
-                if Humanoid:GetState() == Enum.HumanoidStateType.Physics then
-                    Humanoid:ChangeState(Enum.HumanoidStateType.Seated)
+            Humanoid.StateChanged:Connect(function(_, newState)
+                if newState == Enum.HumanoidStateType.Physics then
+                    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
                 end
             end)
-        else
-            Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
         end
     end)
 end
-
 
 
 -- MOVEMENT
@@ -239,20 +209,31 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
     end)
     
 
-    Main:AddToggle("AntiKB", {Text = "Anti Speed Modify", Tooltip = "Denys The Server To Move You"}):OnChanged(function()
-        local UIS = game:GetService("UserInputService")
+    local AntiKBConnection
+
+    Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function()
         local RunService = game:GetService("RunService")
-        local HumanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+        local Player = game.Players.LocalPlayer
+        local Character = Player.Character or Player.CharacterAdded:Wait()
+        local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    
         if Toggles.AntiKB.Value then
-            RunService.Heartbeat:Connect(function()
-                if not (UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S) or UIS:IsKeyDown(Enum.KeyCode.D) or UIS:IsKeyDown(Enum.KeyCode.Space)) then
-                    HumanoidRootPart.Velocity = Vector3.new(0, 0, 0)
+            AntiKBConnection = RunService.RenderStepped:Connect(function()
+                if not UserInputService:IsKeyDown(Enum.KeyCode.W) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.A) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.S) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    HumanoidRootPart.Velocity = Vector3.zero
                 end
             end)
         else
-            HumanoidRootPart.Velocity = HumanoidRootPart.Velocity
+            if AntiKBConnection then
+                AntiKBConnection:Disconnect()
+                AntiKBConnection = nil
+            end
         end
     end)
+    
     
 end
 
@@ -306,8 +287,9 @@ Main:AddSlider("JumpFlySlider", {
 -- VISUALS
 local VisualTab = Window:AddTab("Visual")
 local ESPBox = VisualTab:AddLeftTabbox("ESP") do
-    local Main = ESPBox:AddTab("Player Visuals")
-    Main:AddToggle("ESP", {Text = "ESP", Default = false}):AddColorPicker("ESPColor", {Default = Color3.fromRGB(255, 0, 4)}):OnChanged(function()
+    local Main = ESPBox:AddTab("ESP Visuals")
+
+    Main:AddToggle("PlayerESP", {Text = "Player ESP", Default = false}):AddColorPicker("ESPColor", {Default = Color3.fromRGB(255, 0, 4)}):OnChanged(function()
         local Players = game:GetService("Players")
         local function applyHighlight(player)
             local function onCharacterAdded(character)
@@ -317,7 +299,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                     highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
                     highlight.FillColor = Options.ESPColor.Value
                     highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    highlight.FillTransparency = 0.5
+                    highlight.FillTransparency = Toggles.ESPFill.Value and 0.5 or 1
                     highlight.OutlineTransparency = 0
                 end
             end
@@ -326,14 +308,14 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             end
             player.CharacterAdded:Connect(onCharacterAdded)
         end
+
         local function removeHighlight(player)
             if player.Character and player.Character:FindFirstChild("ESPHighlight") then
-                local highlight = player.Character:FindFirstChild("ESPHighlight")
-                highlight:Destroy()
+                player.Character.ESPHighlight:Destroy()
             end
         end
 
-        if Toggles.ESP.Value then
+        if Toggles.PlayerESP.Value then
             for _, player in pairs(Players:GetPlayers()) do
                 applyHighlight(player)
             end
@@ -342,9 +324,208 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             for _, player in pairs(Players:GetPlayers()) do
                 removeHighlight(player)
             end
-            Players.PlayerAdded:Connect(removeHighlight)
         end
     end)
+
+    Main:AddToggle("ESPFill", {Text = "Render ESP Fill", Default = false}):OnChanged(function()
+        if Toggles.PlayerESP.Value then
+            for _, player in pairs(game:GetService("Players"):GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("ESPHighlight") then
+                    local highlight = player.Character.ESPHighlight
+                    highlight.FillTransparency = Toggles.ESPFill.Value and 0.5 or 1
+                end
+            end
+        end
+    end)
+
+    Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local healthLabels = {}
+    
+        local function createHealthLabel(character, player)
+            if character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+                local humanoid = character.Humanoid
+                local billboard = Instance.new("BillboardGui", character.HumanoidRootPart)
+                billboard.Name = "HealthDisplay"
+                billboard.Size = UDim2.new(3, 0, 0.5, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+    
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.ESPHPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.HPSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = ""
+    
+                local connection = RunService.RenderStepped:Connect(function()
+                    if humanoid and humanoid.Health > 0 then
+                        local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
+                        label.Text = string.format("%s | %d%%", player.Name, healthPercent)
+                    else
+                        label.Text = string.format("%s | 0%%", player.Name)
+                    end
+                end)
+    
+                healthLabels[player] = {billboard = billboard, connection = connection}
+            end
+        end
+        local function removeHealthLabel(player)
+            if healthLabels[player] then
+                local data = healthLabels[player]
+                if data.connection then
+                    data.connection:Disconnect()
+                end
+                if data.billboard then
+                    data.billboard:Destroy()
+                end
+                healthLabels[player] = nil
+            end
+        end
+    
+        if Toggles.ESPHP.Value then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    createHealthLabel(player.Character, player)
+                end
+                player.CharacterAdded:Connect(function(character)
+                    createHealthLabel(character, player)
+                end)
+            end
+    
+            Players.PlayerAdded:Connect(function(player)
+                player.CharacterAdded:Connect(function(character)
+                    createHealthLabel(character, player)
+                end)
+            end)
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                removeHealthLabel(player)
+            end
+        end
+    end)   
+    Main:AddSlider("HPSlider", {
+        Text = "Hp Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 30, 
+        Rounding = 0
+    })
+    
+    Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function()
+        local NPCFolder = workspace:FindFirstChild("NPCs")
+        local function createNameTag(npc)
+            if npc:FindFirstChild("HumanoidRootPart") and not npc:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui", npc.HumanoidRootPart)
+                billboard.Name = "NameTag"
+                billboard.Size = UDim2.new(2, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.NPCESPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.NPCNameSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = npc.Name
+            end
+        end
+        
+        local function removeNameTag(npc)
+            if npc:FindFirstChild("NameTag") then
+                npc.NameTag:Destroy()
+            end
+        end
+
+        if Toggles.NPCESP.Value then
+            if NPCFolder then
+                for _, npc in pairs(NPCFolder:GetChildren()) do
+                    createNameTag(npc)
+                end
+                NPCFolder.ChildAdded:Connect(createNameTag)
+            end
+        else
+            if NPCFolder then
+                for _, npc in pairs(NPCFolder:GetChildren()) do
+                    removeNameTag(npc)
+                end
+            end
+        end
+    end)
+    Main:AddSlider("NPCNameSlider", {
+        Text = "Npc Name Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
+
+    Main:AddToggle("DepthsESP", {Text = "Whirlpool ESP", Default = false}):AddColorPicker("DepthsESPColor", {Default = Color3.fromRGB(0, 255, 255)}):OnChanged(function()
+        local function createNameTag(model)
+            if not model:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "NameTag"
+                billboard.Size = UDim2.new(2, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                billboard.Parent = model
+                if model:IsA("Model") then
+                    local center = model:GetBoundingBox().Position
+                    billboard.Adornee = Instance.new("Attachment", workspace.Terrain)
+                    billboard.Adornee.Position = center
+                end
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.DepthsESPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.WhirlpoolNameSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = model.Name
+            end
+        end
+    
+        local function removeNameTag(model)
+            if model:FindFirstChild("NameTag") then
+                model.NameTag:Destroy()
+            end
+        end
+    
+        if Toggles.DepthsESP.Value then
+            for _, model in pairs(workspace:GetChildren()) do
+                if model:IsA("Model") and model.Name == "DepthsWhirlpool" then
+                    createNameTag(model)
+                end
+            end
+            workspace.ChildAdded:Connect(function(child)
+                if child:IsA("Model") and child.Name == "DepthsWhirlpool" then
+                    createNameTag(child)
+                end
+            end)
+        else
+            for _, model in pairs(workspace:GetChildren()) do
+                if model:IsA("Model") and model.Name == "DepthsWhirlpool" then
+                    removeNameTag(model)
+                end
+            end
+        end
+    end)
+    
+    Main:AddSlider("WhirlpoolNameSlider", {
+        Text = "Whirlpool Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
+    
+    
+    
 end
 local CameraBox = VisualTab:AddRightTabbox("Camera") do
     local Main = CameraBox:AddTab("Camera")
@@ -385,42 +566,35 @@ local CameraBox = VisualTab:AddRightTabbox("Camera") do
     end)
 end
 
--- CONFIG
-local ConfigTab = Window:AddTab("Config")
-local CreateConfigurationBOX = ConfigTab:AddLeftTabbox("Create Configuration") do 
-    local Main = CreateConfigurationBOX:AddTab("Create Configuration")
-    Main:AddInput("CreateConfigTextBox", {Default = "", Numeric = false, Finished = false, Text = "Create Configuration to Create", Tooltip = "Creates a configuration file containing settings you can save and load", Placeholder = "File Name here"}):OnChanged(function()
-        if Options.CreateConfigTextBox.Value and string.len(Options.CreateConfigTextBox.Value) ~= "" then 
-            FileToSave = Options.CreateConfigTextBox.Value
-        end
-    end)
-    
-    Main:AddButton("Create Configuration File", function()
-        if FileToSave ~= "" or FileToSave ~= nil then 
-            UpdateFile(FileToSave)
+-- TELEPORTING
+local TeleportTab = Window:AddTab("Teleports")
+local DeepwokenPOISBox = TeleportTab:AddLeftTabbox("DeepwokenPOIs") do 
+    local Main = DeepwokenPOISBox:AddTab("Etrean POIs")
+    Main:AddDropdown("locationteleport", {AllowNull = true, Text = "Location", Default = null, Values = {
+        "Lower Erisia",
+        "Isle Of Vigils",
+        "Test"
+    }}):OnChanged(function()
+        if Options.locationteleport.Value == "Lower Erisia" then
+            teleportToCoordinates(-370.8, 195.7, 27.4, 705)
+        elseif Options.locationteleport.Value == "Isle Of Vigils" then
+
+            teleportToCoordinates(-2439.9, 195.7, 2934.5, 5)
+
+        elseif Options.locationteleport.Value == "Test" then
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            local currentPosition = humanoidRootPart.Position
+            print("Current Location: X = " .. currentPosition.X .. ", Y = " .. currentPosition.Y .. ", Z = " .. currentPosition.Z)
         end
     end)
 end
 
-local SaveConfigurationBOX = ConfigTab:AddLeftTabbox("Save Configuration") do 
-    local Main = SaveConfigurationBOX:AddTab("Save Configuration")
-    Main:AddDropdown("SaveConfigurationDropdown", {AllowNull = true, Values = GetFiles(), Text = "Choose Configuration to Save"})
-    Main:AddButton("Save Configuration", function()
-        if Options.SaveConfigurationDropdown.Value then 
-            UpdateFile(Options.SaveConfigurationDropdown.Value)
-        end
-    end)
-end
-
-local LoadConfigurationBOX = ConfigTab:AddLeftTabbox("Load Configuration") do 
-    local Main = LoadConfigurationBOX:AddTab("Load Configuration")
-    
-    Main:AddDropdown("LoadConfigurationDropdown", {AllowNull = true, Values = GetFiles(), Text = "Choose Configuration to Load"})
-    Main:AddButton("Load Configuration", function()
-        if table.find(GetFiles(), Options.LoadConfigurationDropdown.Value) then
-            LoadFile(Options.LoadConfigurationDropdown.Value)
-        end
-    end)
+-- MISC
+local MiscTab = Window:AddTab("Misc")
+local MiscBox = MiscTab:AddLeftTabbox("Misc") do 
+    local Main = MiscBox:AddTab("Server Hop")
 end
 
 -- HELP
@@ -430,44 +604,9 @@ local CreditsBox = HelpTab:AddLeftTabbox("Credits") do
 end
 local KeybindsBox = HelpTab:AddRightTabbox("Keybinds") do
     local Main = KeybindsBox:AddTab("Goober Client Keybinds")
-    Main:AddLabel("Unload Client - Right ALT")
     Main:AddLabel("Hide GUI - Right CTRL")
 end
 local BugsBox = HelpTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
-    Main:AddLabel("Doesn't unload properly")
     Main:AddLabel("Jump Fly Can't Turn Off")
 end
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.RightAlt and not gameProcessed then
-        local Player = game:GetService('Players').LocalPlayer
-        local Humanoid = Player.Character and Player.Character:FindFirstChildOfClass('Humanoid')
-        
-        -- Reset WalkSpeed
-        if Humanoid then
-            Humanoid.WalkSpeed = 16
-        end
-        
-        -- Disconnect Jump connection if it exists
-        if JumpConnection then
-            JumpConnection:Disconnect()
-            JumpConnection = nil
-        end
-        
-        -- Disable ESP and remove highlights for all players
-        if Toggles.ESP.Value then
-            Toggles.ESP.Value = false
-            for _, player in pairs(Players:GetPlayers()) do
-                removeHighlight(player)
-            end
-            Players.PlayerAdded:Connect(function(player)
-                removeHighlight(player)
-            end)
-        end
-
-        -- Unload the library
-        Library:Unload()
-    end
-end)
-

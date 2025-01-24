@@ -61,14 +61,14 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violi
 Library:SetWatermark("discord.gg/mushroom")
 Library.OutlineColor = Color3.fromRGB(49, 169, 246)
 Library.AccentColor = Color3.fromRGB(49, 169, 246)
-local Window = Library:CreateWindow({Title = 'Goober Client | Made By: swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
+local Window = Library:CreateWindow({Title = 'Goober Client | Made By swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
 
 noclip = false
 NoClipFirstEnabled = false
 
 -- ON LOAD
 
-SendNotification("Script Loaded", "Goober Client has successfully loaded!")
+SendNotification("Goober Client", "Goober Client Has Successfully Loaded!")
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")

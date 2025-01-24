@@ -43,6 +43,20 @@ local function AllowRagdoll(Toggle)
     end
 end
 
+local function FakeDeath(Toggle)
+    local Player = game.Players.LocalPlayer
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+    local Humanoid = Character:WaitForChild("Humanoid")
+
+    if not Toggle then
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    else
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+end
+
 local function startFlying()
     if flyForce then return end
     if not Toggles.AntiRagdoll.Value then
@@ -203,6 +217,9 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     end)
     Main:AddToggle("AntiRagdoll", {Text = "Anti Ragdoll"}):OnChanged(function()
         AllowRagdoll(Toggles.AntiRagdoll.Value)
+    end)
+    Main:AddToggle("FakeDeath", {Text = "Fake Death"}):OnChanged(function()
+        FakeDeath(Toggles.FakeDeath.Value)
     end)
 end
 

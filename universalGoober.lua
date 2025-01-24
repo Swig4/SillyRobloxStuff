@@ -27,26 +27,25 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
-
+local healthConnection
 -- functions
-local function EnableGodMode()
+local function ToggleGodMode(Toggle)
     local Player = game.Players.LocalPlayer
     local Character = Player.Character or Player.CharacterAdded:Wait()
     local Humanoid = Character:WaitForChild("Humanoid")
-    Humanoid.Health = 100
-    local healthConnection
-    healthConnection = game:GetService("RunService").Heartbeat:Connect(function()
-        if Humanoid.Health < 100 then
-            Humanoid.Health = 100
-        end
-    end)
-    
-    return healthConnection
-end
 
-local function DisableGodMode(healthConnection)
-    if healthConnection then
-        healthConnection:Disconnect()
+    if Toggle then
+        Humanoid.Health = 100
+        healthConnection = game:GetService("RunService").Heartbeat:Connect(function()
+            if Humanoid.Health < 100 then
+                Humanoid.Health = 100
+            end
+        end)
+    else
+        if healthConnection then
+            healthConnection:Disconnect()
+            healthConnection = nil
+        end
     end
 end
 
@@ -247,14 +246,7 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
         FakeDeath(Toggles.FakeDeath.Value)
     end)
     Main:AddToggle("Godmode", {Text = "God Mode"}):OnChanged(function()
-        local Player = game.Players.LocalPlayer
-        local Character = Player.Character or Player.CharacterAdded:Wait()
-        local Humanoid = Character:WaitForChild("Humanoid")
-        if Toggles.Godmode.Value then
-            EnableGodMode()
-        else
-            DisableGodMode()
-        end
+        ToggleGodMode(Toggles.Godmode.Value)
     end)
 end
 

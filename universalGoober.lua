@@ -229,6 +229,7 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
 end
 
 
+
 -- MOVEMENT
 local MovementTab = Window:AddTab("Movement")
 local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
@@ -525,7 +526,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Text = "Hp Font Size", 
         Min = 1, 
         Max = 70, 
-        Default = 30, 
+        Default = 15, 
         Rounding = 0
     })
 end

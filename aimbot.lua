@@ -648,7 +648,7 @@ local TabScriptHub = Window:CreateTab("other scripts", 7733954760)
     TabInfo:CreateParagraph({Title = "Executor", Content = identifyexecutor()})
     TabInfo:CreateParagraph({Title = "Game", Content = gameName})
     TabInfo:CreateParagraph({Title = "Game ID", Content = game.placeId})
-    TabInfo:CreateParagraph({Title = "mintyhack cord ", Content = "discord.gg/emK5DUgZCs"})
+    TabInfo:CreateParagraph({Title = "Goober Client Discord", Content = "discord.gg/mushroom"})
 
     -- AIMBOT ELEMENTS
 	TabAimbot:CreateSection("acs")

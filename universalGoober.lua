@@ -67,7 +67,6 @@ noclip = false
 NoClipFirstEnabled = false
 
 -- ON LOAD
-
 SendNotification("Goober Client Has Successfully Loaded!")
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)

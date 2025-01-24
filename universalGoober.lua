@@ -650,7 +650,10 @@ local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
         print(Toggles.voiceUnban)
         if Toggles.voiceUnban.Value then
+            SendNotification("Bypassing...")
+            Wait(0.7)
             game:GetService("VoiceChatService"):joinVoice()
+            SendNotification("Bypassed!")
         else
             SendNotification("Rejoin The Game To Disable!")
         end

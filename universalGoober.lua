@@ -650,13 +650,20 @@ end
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
     Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
-        print(Toggles.voiceUnban)
         if Toggles.voiceUnban.Value then
             SendNotification("Bypassing...")
             task.delay(2.5, function()
                 game:GetService("VoiceChatService"):joinVoice()
                 SendNotification("Bypassed!")
             end)            
+        else
+            SendNotification("Rejoin The Game To Disable!")
+        end
+    end)
+
+    Main:AddToggle("Adonisbypass", {Text = "Adonis Bypass", Default = false, Tooltip = "Disables Adonis AC"}):OnChanged(function()
+        if Toggles.Adonisbypass.Value then
+            loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/AdonisBypahh.lua'))()
         else
             SendNotification("Rejoin The Game To Disable!")
         end

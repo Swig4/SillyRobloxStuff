@@ -27,8 +27,25 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
+local SPIN_SPEED = 10
 
 -- functions
+local function spinhoriz(deltaTime)
+    if type(SPIN_SPEED) ~= "number" then
+        SendNotification("SPIN_SPEED is not a number. Setting to default value of 10.")
+        SPIN_SPEED = 10
+    end
+
+    horizSpinAngle = horizSpinAngle + math.rad(SPIN_SPEED)
+    
+    local currentPosition = humanoidRootPart.Position
+    local lookVector = humanoidRootPart.CFrame.LookVector
+    
+    local newCFrame = CFrame.new(currentPosition, currentPosition + lookVector) * CFrame.Angles(0, horizSpinAngle, 0)
+    
+    humanoidRootPart.CFrame = newCFrame
+end
+
 local function AllowRagdoll(Toggle)
     local Player = game.Players.LocalPlayer
     local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -225,6 +242,29 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     end)
     Main:AddToggle("FakeDeath", {Text = "Fake Death"}):OnChanged(function()
         FakeDeath(Toggles.FakeDeath.Value)
+    end)
+    local horizSpinConnection
+    Main:AddToggle("spinbot", {Text = "Spinbot"}):OnChanged(function()
+        if Toggles.spinbot.Value then
+            if not horizSpinConnection then
+                horizSpinConnection = game:GetService("RunService").Heartbeat:Connect(spinhoriz)
+            end
+        else
+            if horizSpinConnection then
+                horizSpinConnection:Disconnect()
+                horizSpinConnection = nil
+            end
+            horizSpinAngle = 0
+        end
+    end)
+    Main:AddSlider("spinbotSpeed", {
+        Text = "Spinbot Speed", 
+        Min = 1, 
+        Max = 100, 
+        Default = 50, 
+        Rounding = 0
+    }):OnChanged(function()
+        SPIN_SPEED = Options.spinbotSpeed.Value
     end)
 end
 

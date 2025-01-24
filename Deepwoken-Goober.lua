@@ -502,7 +502,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Text = "Hp Font Size", 
         Min = 1, 
         Max = 70, 
-        Default = 30, 
+        Default = 15, 
         Rounding = 0
     })
     

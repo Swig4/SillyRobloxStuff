@@ -1,3 +1,5 @@
+-- loadstring(game:HttpGet('https://raw.githubusercontent.com/Swig4/SillyRobloxStuff/main/gooberHub.lua'))()
+
 local library = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/ShaddowScripts/Main/main/Library"))()
 
 local Main = library:CreateWindow("Goober Hub | Made By swig5 | V1.0","Crimson")

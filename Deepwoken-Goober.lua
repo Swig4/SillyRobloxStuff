@@ -8,6 +8,10 @@ if not syn or not protectgui then
 end
 
 -- variables
+getgenv().SilentAimSettings = Settings
+local MainFileName = "GooberClient"
+local SelectedFile, FileToSave = "", ""
+
 local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,7 +21,9 @@ local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
-local Workspace = game:GetService("Workspace")
+
+local resume = coroutine.resume 
+local create = coroutine.create
 
 -- functions
 
@@ -113,13 +119,13 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
         local Player = game.Players.LocalPlayer
         local Character = Player.Character or Player.CharacterAdded:Wait()
         local Humanoid = Character:WaitForChild("Humanoid")
-
-        if Toggles.AntiRagdoll and Toggles.AntiRagdoll.Value then
-            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-            Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-        else
-            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-            Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+        
+        if Toggles.AntiRagdoll.Value then
+            Humanoid.StateChanged:Connect(function(_, newState)
+                if newState == Enum.HumanoidStateType.Physics then
+                    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+                end
+            end)
         end
     end)
 end
@@ -586,27 +592,38 @@ local MiscTab = Window:AddTab("Misc")
 local ServerBox = MiscTab:AddLeftTabbox("Server") do 
     local Main = ServerBox:AddTab("Server")
 
-    local spamPart
+    local SpawnPart
 
-    Main:AddToggle("partSpam", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function()
-        if Toggles.partSpam.Value then
-            if not spamPart then
+    Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function()
+        if Toggles.partSpawn.Value then
+            if not SpawnPart then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     local rootPart = LocalPlayer.Character.HumanoidRootPart
-                    spamPart = Instance.new("Part")
-                    spamPart.Size = Vector3.new(4, 1, 4)
-                    spamPart.Anchored = true
-                    spamPart.BrickColor = BrickColor.new("Bright blue")
-                    spamPart.Position = rootPart.Position - Vector3.new(0, (rootPart.Size.Y / 2) + 0.5, 0)
-                    spamPart.Name = "SpamPart"
-                    spamPart.Parent = Workspace
+                    SpawnPart = Instance.new("Part")
+                    SpawnPart.Size = Vector3.new(4, 1, 4)
+                    SpawnPart.Anchored = true
+                    SpawnPart.BrickColor = BrickColor.new("Bright blue")
+                    SpawnPart.Position = rootPart.Position - Vector3.new(0, (rootPart.Size.Y / 2) + 0.5, 0)
+                    SpawnPart.Name = "partSpawn"
+                    SpawnPart.Parent = Workspace
                 end
             end
         else
-            if spamPart then
-                spamPart:Destroy()
-                spamPart = nil
+            if SpawnPart then
+                SpawnPart:Destroy()
+                SpawnPart = nil
             end
+        end
+    end)
+end
+
+local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
+    local Main = BypassesBox:AddTab("Bypasses")
+    Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
+        if Toggles.voiceUnban.Value then
+            game:GetService("VoiceChatService"):joinVoice()
+        else
+            SendNotification("Rejoin The Game To Disable!")
         end
     end)
 end
@@ -627,5 +644,4 @@ local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
 end
 local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
-    Main:AddLabel("Jump Fly Can't Turn Off")
 end

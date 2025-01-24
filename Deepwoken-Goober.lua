@@ -8,10 +8,6 @@ if not syn or not protectgui then
 end
 
 -- variables
-getgenv().SilentAimSettings = Settings
-local MainFileName = "GooberClient"
-local SelectedFile, FileToSave = "", ""
-
 local Camera = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -21,9 +17,16 @@ local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
+local UIS = game:GetService'UserInputService'
 
-local resume = coroutine.resume 
-local create = coroutine.create
+
+local flyForce
+local conn
+local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
+local originalGravity = workspace.Gravity
+local FLY_SPEED = 50
 
 -- functions
 local function AllowRagdoll(Toggle)

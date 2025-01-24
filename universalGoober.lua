@@ -557,7 +557,7 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
     end)    
 end
 
-local BypassesBox = MiscTab:AddLeftTabbox("Bypasses") do 
+local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
     Main:AddToggle("chatBypass", {Text = "Chat Bypass", Default = false}):OnChanged(function()
         if Toggles.chatBypass.Value then

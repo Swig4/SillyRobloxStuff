@@ -26,6 +26,89 @@ local resume = coroutine.resume
 local create = coroutine.create
 
 -- functions
+local function AllowRagdoll(Toggle)
+    local Player = game.Players.LocalPlayer
+    local Character = Player.Character or Player.CharacterAdded:Wait()
+    local Humanoid = Character:WaitForChild("Humanoid")
+
+    if not Toggle then
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    else
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+end
+
+local function startFlying()
+    if flyForce then return end
+    if not Toggles.AntiRagdoll.Value then
+        AllowRagdoll(false)
+    end
+    workspace.Gravity = 0
+
+    flyForce = Instance.new("BodyVelocity")
+    flyForce.Velocity = Vector3.new(0, 0, 0)
+    flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    flyForce.Parent = humanoidRootPart
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+
+    conn = game:GetService("RunService").Heartbeat:Connect(function()
+        local camera = workspace.CurrentCamera
+        local lookVector = camera.CFrame.LookVector
+        local rightVector = camera.CFrame.RightVector
+
+        local moveDirection = Vector3.new(0, 0, 0)
+
+        if UIS:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection = moveDirection + lookVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection = moveDirection - lookVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection = moveDirection - rightVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection = moveDirection + rightVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+        end
+        if moveDirection.Magnitude > 0 then
+            flyForce.Velocity = moveDirection.Unit * Options.FlightSlider.Value
+        else
+            flyForce.Velocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+local function stopFlying()
+    if flyForce then
+        flyForce:Destroy()
+        flyForce = nil
+    end
+    if not Toggles.AntiRagdoll.Value then
+        AllowRagdoll(true)
+    end
+    if conn then
+        conn:Disconnect()
+        conn = nil
+    end
+
+    workspace.Gravity = originalGravity
+
+    for _, child in pairs(humanoidRootPart:GetChildren()) do
+        if child:IsA("BodyGyro") then
+            child:Destroy()
+        end
+    end
+
+    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+end
 
 local function teleportToCoordinates(x, y, z, duration)
     local player = game.Players.LocalPlayer
@@ -116,17 +199,7 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
         end
     end)
     Main:AddToggle("AntiRagdoll", {Text = "Anti Ragdoll"}):OnChanged(function()
-        local Player = game.Players.LocalPlayer
-        local Character = Player.Character or Player.CharacterAdded:Wait()
-        local Humanoid = Character:WaitForChild("Humanoid")
-        
-        if Toggles.AntiRagdoll.Value then
-            Humanoid.StateChanged:Connect(function(_, newState)
-                if newState == Enum.HumanoidStateType.Physics then
-                    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-                end
-            end)
-        end
+        AllowRagdoll(Toggles.AntiRagdoll.Value)
     end)
 end
 
@@ -239,6 +312,25 @@ end
 
 local FlyBox = MovementTab:AddRightTabbox("Main")
 local Main = FlyBox:AddTab("Fly")
+Main:AddToggle("Flight", { Text = "Flight", Default = false }):OnChanged(function()
+    local Player = game:GetService'Players'.LocalPlayer
+    local UIS = game:GetService'UserInputService'
+
+    if Toggles.Flight.Value then
+        startFlying()
+    else
+        stopFlying()
+    end
+end)
+
+Main:AddSlider("FlightSlider", {
+    Text = "Fly Speed", 
+    Min = 1, 
+    Max = 400, 
+    Default = 50, 
+    Rounding = 0
+})
+
 local JumpConnection
 Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChanged(function()
     local Player = game:GetService'Players'.LocalPlayer

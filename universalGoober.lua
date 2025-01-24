@@ -61,7 +61,6 @@ local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violi
 Library:SetWatermark("discord.gg/mushroom")
 Library.OutlineColor = Color3.fromRGB(49, 169, 246)
 Library.AccentColor = Color3.fromRGB(49, 169, 246)
-Library.WatermarkOuter = Color3.fromRGB(49, 169, 246)
 local Window = Library:CreateWindow({Title = 'Goober Client | Made By swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
 
 noclip = false

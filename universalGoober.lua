@@ -27,6 +27,7 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
+
 -- functions
 local function AllowRagdoll(Toggle)
     local Player = game.Players.LocalPlayer

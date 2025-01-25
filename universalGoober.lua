@@ -27,75 +27,147 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 
 local originalGravity = workspace.Gravity
-
-local FLY_SPEED = 50
-local SPIN_SPEED = 10
-local FAKELAG_LIMIT = 5
-local LagTick = 0
-
--- functions
 local Network = game:GetService("NetworkClient")
 local LocalPlayer = game.Players.LocalPlayer
 local LagTick = 0
 local FAKELAG_LIMIT = 5
+local FLY_SPEED = 50
+local SPIN_SPEED = 10
+local FAKELAG_LIMIT = 5
+local AUTOPEEK_TOGGLE_STATE = false
+local AUTOPEEK_TICK_COUNT = 0
+local AUTOPEEK_LIMIT = 15
+local AUTOPEEK_ORIGINAL_POSITION = nil
+local LagTick = 0
+
+-- functions
+local function SendNotification(message)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "Goober Client",
+        Text = message
+    })
+end
 
 task.spawn(function()
     task.wait(1)
     while true do
         task.wait(1 / 16)
-        if Toggles.FakelagEnable.Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
-            local Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            
-            if Humanoid.Health > 0 then
-                LagTick = math.clamp(LagTick + 1, 0, FAKELAG_LIMIT)
-                
-                if LagTick == FAKELAG_LIMIT then
-                    Network:SetOutgoingKBPSLimit(9e9) 
-                    LagTick = 0
-                    local RootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if RootPart then
-                        RootPart.CFrame = RootPart.CFrame
-                    end
-                    if Toggles.FakelagVisualize.Value then
-                        LocalPlayer.Character.Archivable = true
-                        
-                        if not LocalPlayer.Character:FindFirstChild("Fakelag") then
-                            local Folder = Instance.new("Folder")
-                            Folder.Name = "Fakelag"
-                            Folder.Parent = LocalPlayer.Character
+        if not AUTOPEEK_TOGGLE_STATE then
+            if Toggles.FakelagEnable.Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+                local Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+
+                if Humanoid.Health > 0 then
+                    LagTick = math.clamp(LagTick + 1, 0, FAKELAG_LIMIT)
+
+                    if LagTick == FAKELAG_LIMIT then
+                        Network:SetOutgoingKBPSLimit(9e9) 
+                        LagTick = 0
+                        local RootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if RootPart then
+                            RootPart.CFrame = RootPart.CFrame
                         end
+                        if Toggles.FakelagVisualize.Value then
+                            LocalPlayer.Character.Archivable = true
 
-                        LocalPlayer.Character.Fakelag:ClearAllChildren()
-
-                        local Clone = LocalPlayer.Character:Clone()
-                        for _, obj in pairs(Clone:GetDescendants()) do
-                            if obj:IsA("BasePart") or obj:IsA("MeshPart") then
-                                obj.CanCollide = false
-                                obj.Anchored = true
-                                obj.Material = Enum.Material.ForceField
-                                obj.Color = Options.FakelagVisColor.Value
-                                obj.Transparency = 0.5
-                                obj.Size = obj.Size + Vector3.new(0.03, 0.03, 0.03)
-                            else
-                                obj:Destroy()
+                            if not LocalPlayer.Character:FindFirstChild("Fakelag") then
+                                local Folder = Instance.new("Folder")
+                                Folder.Name = "Fakelag"
+                                Folder.Parent = LocalPlayer.Character
                             end
-                        end
-                        Clone.Parent = LocalPlayer.Character.Fakelag
-                    end
-                else
-                    Network:SetOutgoingKBPSLimit(1)
-                end
-            end
-        else
-            LagTick = 0
-            Network:SetOutgoingKBPSLimit(9e9)
 
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
-                LocalPlayer.Character.Fakelag:ClearAllChildren()
+                            LocalPlayer.Character.Fakelag:ClearAllChildren()
+
+                            local Clone = LocalPlayer.Character:Clone()
+                            for _, obj in pairs(Clone:GetDescendants()) do
+                                if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                                    obj.CanCollide = false
+                                    obj.Anchored = true
+                                    obj.Material = Enum.Material.ForceField
+                                    obj.Color = Options.FakelagVisColor.Value
+                                    obj.Transparency = 0.5
+                                    obj.Size = obj.Size + Vector3.new(0.03, 0.03, 0.03)
+                                else
+                                    obj:Destroy()
+                                end
+                            end
+                            Clone.Parent = LocalPlayer.Character.Fakelag
+                        end
+                    else
+                        Network:SetOutgoingKBPSLimit(1)
+                    end
+                end
+            else
+                LagTick = 0
+                Network:SetOutgoingKBPSLimit(9e9)
+
+                if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
+                    LocalPlayer.Character.Fakelag:ClearAllChildren()
+                end
             end
         end
     end
 end)
+
+task.spawn(function()
+    task.wait(1)
+    while true do
+        task.wait(1 / 16)
+        if Toggles.AutoPeekEnable.Value then
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                if AUTOPEEK_TOGGLE_STATE then
+                    if AUTOPEEK_TICK_COUNT == 0 then
+                        if Toggles.AutoPeekVisualize.Value then
+                            LocalPlayer.Character.Archivable = true
+                            if not LocalPlayer.Character:FindFirstChild("AutoPeek") then
+                                local Folder = Instance.new("Folder")
+                                Folder.Name = "AutoPeek"
+                                Folder.Parent = LocalPlayer.Character
+                            end
+                            LocalPlayer.Character.AutoPeek:ClearAllChildren()
+                            local Clone = LocalPlayer.Character:Clone()
+                            if Clone then
+                                for _, obj in pairs(Clone:GetDescendants()) do
+                                    if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                                        obj.CanCollide = false
+                                        obj.Anchored = true
+                                        obj.Material = Enum.Material.ForceField
+                                        obj.Color = Options.AutoPeekVisColor.Value
+                                        obj.Transparency = 0.5
+                                        obj.Size = obj.Size + Vector3.new(0.03, 0.03, 0.03)
+                                    else
+                                        obj:Destroy()
+                                    end
+                                end
+                                Clone.Parent = LocalPlayer.Character.AutoPeek
+                            end
+                        end
+                    end
+                    AUTOPEEK_TICK_COUNT = AUTOPEEK_TICK_COUNT + 1
+                    print (AUTOPEEK_TICK_COUNT)
+                    if AUTOPEEK_TICK_COUNT >= AUTOPEEK_LIMIT then
+                        AUTOPEEK_TOGGLE_STATE = false
+                        AUTOPEEK_TICK_COUNT = 0
+                        Network:SetOutgoingKBPSLimit(9e9)
+                        SendNotification("Auto Peek Limit Reached!")
+                        if LocalPlayer.Character:FindFirstChild("AutoPeek") then
+                            LocalPlayer.Character.AutoPeek:ClearAllChildren()
+                        end
+                    else
+                        Network:SetOutgoingKBPSLimit(1)
+                    end
+                end
+            end
+        else
+            AUTOPEEK_TICK_COUNT = 0
+            AUTOPEEK_TOGGLE_STATE = false
+            Network:SetOutgoingKBPSLimit(9e9)
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("AutoPeek") then
+                LocalPlayer.Character.AutoPeek:ClearAllChildren()
+            end
+        end
+    end
+end)
+
 
 local function spinhoriz(deltaTime)
     if type(SPIN_SPEED) ~= "number" then
@@ -237,12 +309,7 @@ local function teleportToCoordinates(x, y, z, duration)
     bodyVelocity:Destroy()
 end
 
-local function SendNotification(message)
-    game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "Goober Client",
-        Text = message
-    })
-end
+
 
 -- ui creating & handling
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
@@ -254,8 +321,19 @@ local Window = Library:CreateWindow({Title = 'Goober Client | Made By swig5 | V1
 noclip = false
 NoClipFirstEnabled = false
 
--- ON LOAD
+-- ON LOAD / ALWAYS RUNNING
 SendNotification("Goober Client Has Successfully Loaded!")
+
+game:GetService("UserInputService").InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and Toggles.AutoPeekEnable.Value and input.KeyCode == AUTOPEEK_HOTKEY then
+        AUTOPEEK_TOGGLE_STATE = not AUTOPEEK_TOGGLE_STATE
+
+        if AUTOPEEK_TOGGLE_STATE and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            AUTOPEEK_ORIGINAL_POSITION = LocalPlayer.Character.HumanoidRootPart.CFrame
+        end
+    end
+end)
+
 
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
@@ -335,7 +413,7 @@ end
 
 local FakeLagBOX = PlayerTab:AddRightTabbox("Fakelag") do
     local Main = FakeLagBOX:AddTab("Fakelag")
-    Main:AddToggle("FakelagEnable", {Text = "Enable", Default = false}):OnChanged(function(event)
+    Main:AddToggle("FakelagEnable", {Text = "Fakelag Enable", Default = false}):OnChanged(function(event)
         if not event then
             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
                 LocalPlayer.Character:FindFirstChild("Fakelag"):ClearAllChildren()
@@ -352,7 +430,51 @@ local FakeLagBOX = PlayerTab:AddRightTabbox("Fakelag") do
     }):OnChanged(function()
         FAKELAG_LIMIT = Options.FakelagDelay.Value
     end)
-    Main:AddToggle("FakelagVisualize", {Text = "Visualize", Default = false}):AddColorPicker("FakelagVisColor", {Default = Color3.fromRGB(255, 0, 0)})
+    Main:AddToggle("FakelagVisualize", {Text = "Fakelag Visualize", Default = false}):AddColorPicker("FakelagVisColor", {Default = Color3.fromRGB(255, 0, 0)})
+    
+
+
+    Main:AddToggle("AutoPeekEnable", {
+        Text = "Auto Peek Enable",
+        Default = false,
+        Tooltip = "Allows For Auto Peek To Be Toggled, Click Keybind To Toggle"
+    }):OnChanged(function(event)
+        if not event then
+            AUTOPEEK_TOGGLE_STATE = false
+        end
+    end)
+    
+    Main:AddSlider("AutoPeekMaxTicks", {
+        Text = "Auto Peek Max Ticks", 
+        Min = 1, 
+        Max = 64, 
+        Default = 15, 
+        Rounding = 0
+    }):OnChanged(function()
+        AUTOPEEK_LIMIT = Options.AutoPeekMaxTicks.Value
+    end)
+    
+    Main:AddToggle("AutoPeekVisualize", {Text = "Auto Peek Visualize", Default = false}):AddColorPicker("AutoPeekVisColor", {Default = Color3.fromRGB(255, 255, 255)})
+    
+    Main:AddInput("AutoPeekHotkey", {
+        Default = "X",
+        Numeric = false,
+        Finished = false,
+        Text = "Auto Peek Hotkey",
+        Tooltip = "Key To Toggle Auto Peek",
+        Placeholder = "Click Here!"
+    }):OnChanged(function(event)
+        local success, keyCode = pcall(function()
+            return Enum.KeyCode[event]
+        end)
+    
+        if success then
+            AUTOPEEK_HOTKEY = keyCode
+        else
+            SendNotification("Failed To Set Keybind, Resetting To X.")
+            AUTOPEEK_HOTKEY = Enum.KeyCode.X
+        end
+    end)
     
 end
 
@@ -812,6 +934,7 @@ local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
         end
     end)
 end
+
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
     local Main = KeybindsBox:AddTab("Goober Client Keybinds")
     Main:AddLabel("Hide GUI - Right CTRL")

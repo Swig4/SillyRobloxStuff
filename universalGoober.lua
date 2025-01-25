@@ -19,17 +19,88 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Workspace = game:GetService("Workspace")
 local UIS = game:GetService'UserInputService'
-
+local Network = game:GetService("NetworkClient")
 
 local flyForce
 local conn
 local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
+
 local originalGravity = workspace.Gravity
+
 local FLY_SPEED = 50
 local SPIN_SPEED = 10
+local FAKELAG_LIMIT = 5
+local LagTick = 0
 
 -- functions
+local Network = game:GetService("NetworkClient")
+local LocalPlayer = game.Players.LocalPlayer
+local LagTick = 0
+local FAKELAG_LIMIT = 5
+
+task.spawn(function()
+    task.wait(1)
+    
+    while true do
+        task.wait(1 / 16)
+        
+        if Toggles.FakelagEnable.Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            local Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            
+            if Humanoid.Health > 0 then
+                LagTick = math.clamp(LagTick + 1, 0, FAKELAG_LIMIT)
+                
+                if LagTick == FAKELAG_LIMIT then
+                    Network:SetOutgoingKBPSLimit(9e9) 
+                    LagTick = 0
+                    local RootPart = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if RootPart then
+                        RootPart.CFrame = RootPart.CFrame
+                    end
+                    if Toggles.FakelagVisualize.Value then
+                        LocalPlayer.Character.Archivable = true
+                        
+                        if not LocalPlayer.Character:FindFirstChild("Fakelag") then
+                            local Folder = Instance.new("Folder")
+                            Folder.Name = "Fakelag"
+                            Folder.Parent = LocalPlayer.Character
+                        end
+
+                        LocalPlayer.Character.Fakelag:ClearAllChildren()
+
+                        local Clone = LocalPlayer.Character:Clone()
+                        for _, obj in pairs(Clone:GetDescendants()) do
+                            if obj:IsA("BasePart") or obj:IsA("MeshPart") then
+                                obj.CanCollide = false
+                                obj.Anchored = true
+                                obj.Material = Enum.Material.ForceField
+                                obj.Color = Options.FakelagVisColor.Value
+                                obj.Transparency = 0.5
+                                obj.Size = obj.Size + Vector3.new(0.03, 0.03, 0.03)
+                            else
+                                obj:Destroy()
+                            end
+                        end
+                        Clone.Parent = LocalPlayer.Character.Fakelag
+                    end
+                else
+                    Network:SetOutgoingKBPSLimit(1)
+                end
+            end
+        else
+            LagTick = 0
+            Network:SetOutgoingKBPSLimit(9e9)
+
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
+                LocalPlayer.Character.Fakelag:ClearAllChildren()
+            end
+        end
+    end
+end)
+
+
+
 local function spinhoriz(deltaTime)
     if type(SPIN_SPEED) ~= "number" then
         SendNotification("SPIN_SPEED is not a number. Setting to default value of 10.")
@@ -265,6 +336,29 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     }):OnChanged(function()
         SPIN_SPEED = Options.spinbotSpeed.Value
     end)
+end
+
+local FakeLagBOX = PlayerTab:AddRightTabbox("Fakelag") do
+    local Main = FakeLagBOX:AddTab("Fakelag")
+    Main:AddToggle("FakelagEnable", {Text = "Enable", Default = false}):OnChanged(function(event)
+        if not event then
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
+                LocalPlayer.Character:FindFirstChild("Fakelag"):ClearAllChildren()
+            end
+            Network:SetOutgoingKBPSLimit(9e9)
+        end
+    end)
+    Main:AddSlider("FakelagDelay", {
+        Text = "Limit", 
+        Min = 1, 
+        Max = 32, 
+        Default = 5, 
+        Rounding = 0
+    }):OnChanged(function()
+        FAKELAG_LIMIT = Options.FakelagDelay.Value
+    end)
+    Main:AddToggle("FakelagVisualize", {Text = "Visualize", Default = false}):AddColorPicker("FakelagVisColor", {Default = Color3.fromRGB(255, 0, 0)})
+    
 end
 
 -- MOVEMENT

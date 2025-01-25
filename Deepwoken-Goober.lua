@@ -195,14 +195,14 @@ end)
 local PlayerTab = Window:AddTab("Player")
 local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     local Main = MainBOX:AddTab("Main")
-    Main:AddToggle("Phase", {Text = "Phase"}):OnChanged(function()
-        noclip = Toggles.Phase.Value
+    Main:AddToggle("Phase", {Text = "Phase"}):OnChanged(function(event)
+        noclip = event
         if not NoClipFirstEnabled then
             NoClipFirstEnabled = true
         end
     end)
-    Main:AddToggle("AntiRagdoll", {Text = "Anti Ragdoll"}):OnChanged(function()
-        AllowRagdoll(Toggles.AntiRagdoll.Value)
+    Main:AddToggle("AntiRagdoll", {Text = "Anti Ragdoll"}):OnChanged(function(event)
+        AllowRagdoll(event)
     end)
 end
 
@@ -287,13 +287,13 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
 
     local AntiKBConnection
 
-    Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function()
+    Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function(event)
         local RunService = game:GetService("RunService")
         local Player = game.Players.LocalPlayer
         local Character = Player.Character or Player.CharacterAdded:Wait()
         local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
     
-        if Toggles.AntiKB.Value then
+        if event then
             AntiKBConnection = RunService.RenderStepped:Connect(function()
                 if not UserInputService:IsKeyDown(Enum.KeyCode.W) and
                    not UserInputService:IsKeyDown(Enum.KeyCode.A) and
@@ -315,11 +315,11 @@ end
 
 local FlyBox = MovementTab:AddRightTabbox("Main")
 local Main = FlyBox:AddTab("Fly")
-Main:AddToggle("Flight", { Text = "Flight", Default = false }):OnChanged(function()
+Main:AddToggle("Flight", { Text = "Flight", Default = false }):OnChanged(function(event)
     local Player = game:GetService'Players'.LocalPlayer
     local UIS = game:GetService'UserInputService'
 
-    if Toggles.Flight.Value then
+    if event then
         startFlying()
     else
         stopFlying()
@@ -335,11 +335,11 @@ Main:AddSlider("FlightSlider", {
 })
 
 local JumpConnection
-Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChanged(function()
+Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChanged(function(event)
     local Player = game:GetService'Players'.LocalPlayer
     local UIS = game:GetService'UserInputService'
 
-    if Toggles.INFJumps.Value then
+    if event then
         function Action(Object, Function)
             if Object ~= nil then
                 Function(Object)
@@ -380,7 +380,7 @@ local VisualTab = Window:AddTab("Visual")
 local ESPBox = VisualTab:AddLeftTabbox("ESP") do
     local Main = ESPBox:AddTab("ESP Visuals")
 
-    Main:AddToggle("PlayerESP", {Text = "Player ESP", Default = false}):AddColorPicker("ESPColor", {Default = Color3.fromRGB(255, 0, 4)}):OnChanged(function()
+    Main:AddToggle("PlayerESP", {Text = "Player ESP", Default = false}):AddColorPicker("ESPColor", {Default = Color3.fromRGB(255, 0, 4)}):OnChanged(function(event)
         local Players = game:GetService("Players")
         local function applyHighlight(player)
             local function onCharacterAdded(character)
@@ -406,7 +406,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             end
         end
 
-        if Toggles.PlayerESP.Value then
+        if event then
             for _, player in pairs(Players:GetPlayers()) do
                 applyHighlight(player)
             end
@@ -429,7 +429,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         end
     end)
 
-    Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function()
+    Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function(event)
         local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local healthLabels = {}
@@ -477,7 +477,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             end
         end
     
-        if Toggles.ESPHP.Value then
+        if event then
             for _, player in pairs(Players:GetPlayers()) do
                 if player.Character then
                     createHealthLabel(player.Character, player)
@@ -506,7 +506,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Rounding = 0
     })
     
-    Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function()
+    Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
         local NPCFolder = workspace:FindFirstChild("NPCs")
         local function createNameTag(npc)
             if npc:FindFirstChild("HumanoidRootPart") and not npc:FindFirstChild("NameTag") then
@@ -533,7 +533,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             end
         end
 
-        if Toggles.NPCESP.Value then
+        if event then
             if NPCFolder then
                 for _, npc in pairs(NPCFolder:GetChildren()) do
                     createNameTag(npc)
@@ -556,7 +556,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Rounding = 0
     })
 
-    Main:AddToggle("DepthsESP", {Text = "Whirlpool ESP", Default = false}):AddColorPicker("DepthsESPColor", {Default = Color3.fromRGB(0, 255, 255)}):OnChanged(function()
+    Main:AddToggle("DepthsESP", {Text = "Whirlpool ESP", Default = false}):AddColorPicker("DepthsESPColor", {Default = Color3.fromRGB(0, 255, 255)}):OnChanged(function(event)
         local function createNameTag(model)
             if not model:FindFirstChild("NameTag") then
                 local billboard = Instance.new("BillboardGui")
@@ -587,7 +587,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
             end
         end
     
-        if Toggles.DepthsESP.Value then
+        if event then
             for _, model in pairs(workspace:GetChildren()) do
                 if model:IsA("Model") and model.Name == "DepthsWhirlpool" then
                     createNameTag(model)
@@ -689,8 +689,8 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
 
     local SpawnPart
 
-    Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function()
-        if Toggles.partSpawn.Value then
+    Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function(event)
+        if event then
             if not SpawnPart then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
                     local rootPart = LocalPlayer.Character.HumanoidRootPart
@@ -714,12 +714,13 @@ end
 
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
-    Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function()
-        if Toggles.voiceUnban.Value then
+    Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function(event)
+        if event then
             SendNotification("Bypassing...")
-            Wait(0.7)
-            game:GetService("VoiceChatService"):joinVoice()
-            SendNotification("Bypassed!")
+            task.delay(2.5, function()
+                game:GetService("VoiceChatService"):joinVoice()
+                SendNotification("Bypassed!")
+            end)            
         else
             SendNotification("Rejoin The Game To Disable!")
         end
@@ -730,10 +731,12 @@ end
 local InfoTab = Window:AddTab("Info")
 local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     local Main = CreditsBox:AddTab("Made By swig5")
-    Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function()
-        local link = "https://discord.gg/mushroom"
-        setclipboard(link)
-        SendNotification("Link Copied To Clipboard!")
+    Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function(event)
+        if event then
+            local link = "https://discord.gg/mushroom"
+            setclipboard(link)
+            SendNotification("Link Copied To Clipboard!")
+        end
     end)
 end
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do

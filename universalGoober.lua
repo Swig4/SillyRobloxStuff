@@ -41,10 +41,8 @@ local FAKELAG_LIMIT = 5
 
 task.spawn(function()
     task.wait(1)
-    
     while true do
         task.wait(1 / 16)
-        
         if Toggles.FakelagEnable.Value and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
             local Humanoid = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
             
@@ -98,8 +96,6 @@ task.spawn(function()
         end
     end
 end)
-
-
 
 local function spinhoriz(deltaTime)
     if type(SPIN_SPEED) ~= "number" then
@@ -218,7 +214,6 @@ local function stopFlying()
 
     humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 end
-
 
 local function teleportToCoordinates(x, y, z, duration)
     local player = game.Players.LocalPlayer

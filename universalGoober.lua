@@ -121,6 +121,7 @@ task.spawn(function()
                             if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
                                 LocalPlayer.Character.Fakelag:ClearAllChildren()
                             end
+                            Network:SetOutgoingKBPSLimit(9e9)
                             if not LocalPlayer.Character:FindFirstChild("AutoPeek") then
                                 local Folder = Instance.new("Folder")
                                 Folder.Name = "AutoPeek"

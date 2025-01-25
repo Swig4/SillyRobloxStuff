@@ -16,10 +16,6 @@ SendNotification("Goober Hub Has Successfully Loaded!")
 
 -- MAIN
 local MainTab = Main:CreateTab("Main")
-MainTab:CreateButton("Hi",function()
-    print("clicked")
-end)
-
 MainTab:CreateButton("Discord", function()
     local link = "https://discord.gg/mushroom"
     setclipboard(link)

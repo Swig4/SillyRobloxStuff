@@ -118,6 +118,9 @@ task.spawn(function()
                     if AUTOPEEK_TICK_COUNT == 0 then
                         if Toggles.AutoPeekVisualize.Value then
                             LocalPlayer.Character.Archivable = true
+                            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Fakelag") then
+                                LocalPlayer.Character.Fakelag:ClearAllChildren()
+                            end
                             if not LocalPlayer.Character:FindFirstChild("AutoPeek") then
                                 local Folder = Instance.new("Folder")
                                 Folder.Name = "AutoPeek"
@@ -214,6 +217,21 @@ local function FakeDeath(Toggle)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    end
+end
+
+local function LoadCamera()
+    local player = game.Players.LocalPlayer
+    local camera = workspace.CurrentCamera
+
+    if Options.CameraMode.Value == "First Person" then
+        player.CameraMode = Enum.CameraMode.LockFirstPerson
+        player.CameraMaxZoomDistance = 0.5
+        player.CameraMinZoomDistance = 0.5
+    elseif Options.CameraMode.Value == "Third Person" then
+        player.CameraMode = Enum.CameraMode.Classic
+        player.CameraMaxZoomDistance = 128
+        player.CameraMinZoomDistance = 0.5
     end
 end
 
@@ -338,6 +356,7 @@ end)
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
     ResetCollisions(Character)
+    LoadCamera()
 end)
 
 local function ResetCollisions(Character)
@@ -787,18 +806,7 @@ local CameraBox = VisualTab:AddRightTabbox("Camera") do
             "Third Person"
         }
     }):OnChanged(function()
-        local player = game.Players.LocalPlayer
-        local camera = workspace.CurrentCamera
-
-        if Options.CameraMode.Value == "First Person" then
-            player.CameraMode = Enum.CameraMode.LockFirstPerson
-            player.CameraMaxZoomDistance = 0.5
-            player.CameraMinZoomDistance = 0.5
-        elseif Options.CameraMode.Value == "Third Person" then
-            player.CameraMode = Enum.CameraMode.Classic
-            player.CameraMaxZoomDistance = 128
-            player.CameraMinZoomDistance = 0.5
-        end
+        LoadCamera()
     end)
 
 

@@ -30,17 +30,9 @@ local FLY_SPEED = 50
 
 -- functions
 local function AllowRagdoll(Toggle)
-    local Player = game.Players.LocalPlayer
-    local Character = Player.Character or Player.CharacterAdded:Wait()
-    local Humanoid = Character:WaitForChild("Humanoid")
-
-    if not Toggle then
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-    else
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-    end
+    local Humanoid = LocalPlayer.Character:WaitForChild("Humanoid")
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
+    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
 end
 
 local function startFlying()
@@ -686,6 +678,11 @@ end
 local MiscTab = Window:AddTab("Misc")
 local ServerBox = MiscTab:AddLeftTabbox("Server") do 
     local Main = ServerBox:AddTab("Server")
+    Main:AddToggle("panicbtn", {Text = "Panic Disconnect", Default = false, Tooltip = "Disconnects You From The Server"}):OnChanged(function(event)
+        if event then
+            game.Players.LocalPlayer:Kick("Goober Client: Panic Button Clicked.")
+        end
+    end)    
 
     local SpawnPart
 
@@ -739,11 +736,12 @@ local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
         end
     end)
 end
+
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
     local Main = KeybindsBox:AddTab("Goober Client Keybinds")
     Main:AddLabel("Hide GUI - Right CTRL")
 end
 local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
-    Main:AddLabel("HP Label Is Not Toggeable")
+    Main:AddLabel("HP Label Doesn't Disappear")
 end

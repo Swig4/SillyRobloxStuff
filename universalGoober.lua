@@ -8,7 +8,7 @@ if not syn or not protectgui then
 end
 
 -- variables
-local Camera = workspace.CurrentCamera
+local camera = Workspace.CurrentCamera
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local GuiService = game:GetService("GuiService")
@@ -27,7 +27,6 @@ local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("Humano
 local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 
 local originalGravity = workspace.Gravity
-local Network = game:GetService("NetworkClient")
 local LocalPlayer = game.Players.LocalPlayer
 local LagTick = 0
 local FAKELAG_LIMIT = 5
@@ -39,6 +38,7 @@ local AUTOPEEK_TICK_COUNT = 0
 local AUTOPEEK_LIMIT = 15
 local AUTOPEEK_ORIGINAL_POSITION = nil
 local LagTick = 0
+local lastSpinTick = tick()
 
 -- functions
 local function SendNotification(message)
@@ -172,67 +172,44 @@ task.spawn(function()
     end
 end)
 
+local function SpinHorizontally()
+    local deltaTime = tick() - lastSpinTick
+    lastSpinTick = tick()
+    horizSpinAngle = horizSpinAngle + math.rad(SPIN_SPEED * deltaTime)
 
-local function spinhoriz(deltaTime)
-    if type(SPIN_SPEED) ~= "number" then
-        SendNotification("SPIN_SPEED is not a number. Setting to default value of 10.")
-        SPIN_SPEED = 10
-    end
-
-    horizSpinAngle = horizSpinAngle + math.rad(SPIN_SPEED)
-    
     local currentPosition = humanoidRootPart.Position
     local lookVector = humanoidRootPart.CFrame.LookVector
-    
     local newCFrame = CFrame.new(currentPosition, currentPosition + lookVector) * CFrame.Angles(0, horizSpinAngle, 0)
-    
     humanoidRootPart.CFrame = newCFrame
 end
 
 local function AllowRagdoll(Toggle)
-    local Player = game.Players.LocalPlayer
-    local Character = Player.Character or Player.CharacterAdded:Wait()
-    local Humanoid = Character:WaitForChild("Humanoid")
-
-    if not Toggle then
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-    else
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, true)
-        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
-    end
+    local Humanoid = LocalPlayer.Character:WaitForChild("Humanoid")
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
+    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
 end
 
 local function FakeDeath(Toggle)
-    local Player = game.Players.LocalPlayer
-    local Character = Player.Character or Player.CharacterAdded:Wait()
-    local Humanoid = Character:WaitForChild("Humanoid")
-
+    local Humanoid = LocalPlayer.Character:WaitForChild("Humanoid")
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, Toggle)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, Toggle)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
     if not Toggle then
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     else
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
-        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
         Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
     end
 end
 
 local function LoadCamera()
-    local player = game.Players.LocalPlayer
-    local camera = workspace.CurrentCamera
-
     if Options.CameraMode.Value == "First Person" then
-        player.CameraMode = Enum.CameraMode.LockFirstPerson
-        player.CameraMaxZoomDistance = 0.5
-        player.CameraMinZoomDistance = 0.5
+        LocalPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
+        LocalPlayer.CameraMaxZoomDistance = 0.5
+        LocalPlayer.CameraMinZoomDistance = 0.5
     elseif Options.CameraMode.Value == "Third Person" then
-        player.CameraMode = Enum.CameraMode.Classic
-        player.CameraMaxZoomDistance = 128
-        player.CameraMinZoomDistance = 0.5
+        LocalPlayer.CameraMode = Enum.CameraMode.Classic
+        LocalPlayer.CameraMaxZoomDistance = 128
+        LocalPlayer.CameraMinZoomDistance = 0.5
     end
 end
 
@@ -282,6 +259,7 @@ local function startFlying()
         end
     end)
 end
+
 local function stopFlying()
     if flyForce then
         flyForce:Destroy()
@@ -307,8 +285,7 @@ local function stopFlying()
 end
 
 local function teleportToCoordinates(x, y, z, duration)
-    local player = game.Players.LocalPlayer
-    local character = player.Character or player.CharacterAdded:Wait()
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
     local bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
@@ -327,7 +304,6 @@ local function teleportToCoordinates(x, y, z, duration)
     end
     bodyVelocity:Destroy()
 end
-
 
 
 -- ui creating & handling
@@ -354,7 +330,7 @@ game:GetService("UserInputService").InputBegan:Connect(function(input, gameProce
 end)
 
 
-game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
+LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
     ResetCollisions(Character)
     LoadCamera()
@@ -369,7 +345,7 @@ local function ResetCollisions(Character)
 end
 
 game:GetService('RunService').Stepped:connect(function()
-    local Character = game.Players.LocalPlayer.Character
+    local Character = LocalPlayer.Character
     if Character then
         local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
         if NoClipFirstEnabled then
@@ -406,20 +382,29 @@ local MainBOX = PlayerTab:AddLeftTabbox("Main") do
     Main:AddToggle("FakeDeath", {Text = "Fake Death"}):OnChanged(function(event)
         FakeDeath(event)
     end)
-    local horizSpinConnection
+    local spinning = false
+
     Main:AddToggle("spinbot", {Text = "Spinbot"}):OnChanged(function(event)
         if event then
-            if not horizSpinConnection then
-                horizSpinConnection = game:GetService("RunService").Heartbeat:Connect(spinhoriz)
+            spinning = true
+            while spinning do
+                local deltaTime = tick() - lastSpinTick
+                lastSpinTick = tick()
+                horizSpinAngle = horizSpinAngle + math.rad(SPIN_SPEED * deltaTime)
+    
+                local currentPosition = humanoidRootPart.Position
+                local lookVector = humanoidRootPart.CFrame.LookVector
+                local newCFrame = CFrame.new(currentPosition, currentPosition + lookVector) * CFrame.Angles(0, horizSpinAngle, 0)
+                humanoidRootPart.CFrame = newCFrame
+                
+                task.wait(1/60)
             end
         else
-            if horizSpinConnection then
-                horizSpinConnection:Disconnect()
-                horizSpinConnection = nil
-            end
+            spinning = false
             horizSpinAngle = 0
         end
     end)
+    
     Main:AddSlider("spinbotSpeed", {
         Text = "Spinbot Speed", 
         Min = 1, 

@@ -112,10 +112,10 @@ local function ToggleFly(Toggle)
                 [Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
                 [Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0)
             }
-    
+                
             for key, direction in pairs(keyMap) do
                 if UIS:IsKeyDown(key) then
-                    moveDirection = moveDirection + camera.CFrame:VectorToWorldSpace(direction)
+                    moveDirection += camera.CFrame:VectorToWorldSpace(direction)
                 end
             end
     

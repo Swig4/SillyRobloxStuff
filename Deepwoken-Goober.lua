@@ -112,7 +112,7 @@ local function ToggleFly(Toggle)
                 [Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
                 [Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0)
             }
-                
+
             for key, direction in pairs(keyMap) do
                 if UIS:IsKeyDown(key) then
                     moveDirection += camera.CFrame:VectorToWorldSpace(direction)
@@ -148,7 +148,7 @@ end
 
 local function teleportToCoordinates(x, y, z, duration)
     local bodyVelocity = Instance.new("BodyVelocity")
-    bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000)
+    bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000) 
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
     bodyVelocity.Parent = humanoidRootPart
 

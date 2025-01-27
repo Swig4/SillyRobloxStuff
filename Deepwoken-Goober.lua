@@ -606,6 +606,58 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Default = 15, 
         Rounding = 0
     })
+
+    Main:AddToggle("ShipsESP", {Text = "Ship ESP", Default = false}):AddColorPicker("ShipESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
+        local ShipFolder = workspace:FindFirstChild("Ships")
+        
+        local function createNameTag(ship)
+            if ship:IsA("Model") and ship.PrimaryPart and not ship.PrimaryPart:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui", ship.PrimaryPart)
+                billboard.Name = "NameTag"
+                billboard.Size = UDim2.new(2, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.ShipESPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.ShipNameSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = ship.Name
+            end
+        end
+        
+        local function removeNameTag(ship)
+            if ship:IsA("Model") and ship.PrimaryPart and ship.PrimaryPart:FindFirstChild("NameTag") then
+                ship.PrimaryPart.NameTag:Destroy()
+            end
+        end
+    
+        if event then
+            if ShipFolder then
+                for _, ship in pairs(ShipFolder:GetChildren()) do
+                    createNameTag(ship)
+                end
+                ShipFolder.ChildAdded:Connect(createNameTag)
+            end
+        else
+            if ShipFolder then
+                for _, ship in pairs(ShipFolder:GetChildren()) do
+                    removeNameTag(ship)
+                end
+            end
+        end
+    end)
+    
+    Main:AddSlider("ShipNameSlider", {
+        Text = "Ships Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
     
     
     
@@ -707,6 +759,100 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
             end
         end
     end)
+end
+local FunnyBox = MiscTab:AddRightTabbox("Funny") do
+    local Main = FunnyBox:AddTab("Funny")
+    Main:AddToggle("StealTalentsBtn", {Text = "Steal Talents", Default = false}):OnChanged(function(event)
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+    
+        local function CopyTalents()
+            local localBackpack = LocalPlayer:FindFirstChild("Backpack")
+            if not localBackpack or not localBackpack:IsA("Backpack") then
+                warn("Local player does not have a valid Backpack instance.")
+                return
+            end
+        
+
+            local function TalentExists(talentName)
+                for _, item in pairs(localBackpack:GetChildren()) do
+                    if item.Name == talentName and item:IsA("Folder") then
+                        return true
+                    end
+                end
+                return false
+            end
+
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    print("Checking player:", player.Name)
+                    local playerFolder = Players:FindFirstChild(player.Name)
+    
+                    local otherBackpack = player.Backpack
+    
+                    if otherBackpack then
+                        for _, item in pairs(otherBackpack:GetChildren()) do
+                            if item:IsA("Folder") and string.match(item.Name, "^Talent:") then
+                                if not TalentExists(item.Name) then
+                                    local clonedTalent = item:Clone()
+                                    clonedTalent.Parent = localBackpack
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            SendNotification("Done!")
+        end
+    
+        if event then
+            CopyTalents()
+        end
+    end) 
+
+
+    Main:AddToggle("StealMantrasBtn", {Text = "Steal Mantras", Default = false}):OnChanged(function(event)
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+    
+        local function CopyMantras()
+            local localBackpack = LocalPlayer:FindFirstChild("Backpack")
+            if not localBackpack or not localBackpack:IsA("Backpack") then
+                warn("Local player does not have a valid Backpack instance.")
+                return
+            end
+
+            local function MantraExists(mantraName)
+                for _, item in pairs(localBackpack:GetChildren()) do
+                    if item.Name == mantraName and item:IsA("Tool") then
+                        return true
+                    end
+                end
+                return false
+            end
+            for _, player in pairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer then
+                    local playerFolder = Players:FindFirstChild(player.Name)
+                    local otherBackpack = player.Backpack
+    
+                    if otherBackpack then
+                        for _, item in pairs(otherBackpack:GetChildren()) do
+                            if item:IsA("Tool") and string.match(item.Name, "^Mantra:") then
+                                if not MantraExists(item.Name) then
+                                    local clonedMantra = item:Clone()
+                                    clonedMantra.Parent = localBackpack
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            SendNotification("Done!")
+        end
+        if event then
+            CopyMantras()
+        end
+    end)    
 end
 
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do

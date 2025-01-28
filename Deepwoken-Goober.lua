@@ -20,7 +20,7 @@ local Player = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Workspace = game:GetService("Workspace")
 local UIS = game:GetService'UserInputService'
-local character = player.Character or player.CharacterAdded:Wait()
+local character = Player.Character or Player.CharacterAdded:Wait()
 
 local flyForce
 local conn
@@ -408,9 +408,10 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
     end)
 
     Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function(event)
+        local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
         local healthLabels = {}
-
+    
         local function createHealthLabel(character, player)
             if character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
                 local humanoid = character.Humanoid
@@ -419,7 +420,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 billboard.Size = UDim2.new(3, 0, 0.5, 0)
                 billboard.StudsOffset = Vector3.new(0, 3, 0)
                 billboard.AlwaysOnTop = true
-
+    
                 local label = Instance.new("TextLabel", billboard)
                 label.Size = UDim2.new(1, 0, 1, 0)
                 label.BackgroundTransparency = 1
@@ -428,7 +429,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 label.TextSize = Options.HPSlider.Value
                 label.Font = Enum.Font.Gotham
                 label.Text = ""
-
+    
                 local connection = RunService.RenderStepped:Connect(function()
                     if humanoid and humanoid.Health > 0 then
                         local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
@@ -437,7 +438,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                         label.Text = string.format("%s | 0%%", player.Name)
                     end
                 end)
-
+    
                 healthLabels[player] = {billboard = billboard, connection = connection}
             end
         end
@@ -453,21 +454,85 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 healthLabels[player] = nil
             end
         end
-
-        toggleHealthLabels(event, Players:GetPlayers(), createHealthLabel, removeHealthLabel)
-    end)
-
-    Main:AddSlider("HPSlider", {Text = "Hp Font Size", Min = 1, Max = 70, Default = 15, Rounding = 0})
+    
+        if event then
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character then
+                    createHealthLabel(player.Character, player)
+                end
+                player.CharacterAdded:Connect(function(character)
+                    createHealthLabel(character, player)
+                end)
+            end
+    
+            Players.PlayerAdded:Connect(function(player)
+                player.CharacterAdded:Connect(function(character)
+                    createHealthLabel(character, player)
+                end)
+            end)
+        else
+            for _, player in pairs(Players:GetPlayers()) do
+                removeHealthLabel(player)
+            end
+        end
+    end)   
+    Main:AddSlider("HPSlider", {
+        Text = "Hp Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
 
     Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
         local NPCFolder = workspace:FindFirstChild("NPCs")
-        toggleESP(event, NPCFolder, function(npc)
-            createNameTag(npc.HumanoidRootPart, npc.Name, Options.NPCESPColor.Value, Options.NPCNameSlider.Value)
-        end, function(npc)
-            removeNameTag(npc.HumanoidRootPart)
-        end)
+        local function createNameTag(npc)
+            if npc:FindFirstChild("HumanoidRootPart") and not npc:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui", npc.HumanoidRootPart)
+                billboard.Name = "NameTag"
+                billboard.Size = UDim2.new(2, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.NPCESPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.NPCNameSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = npc.Name
+            end
+        end
+        
+        local function removeNameTag(npc)
+            if npc:FindFirstChild("NameTag") then
+                npc.NameTag:Destroy()
+            end
+        end
+
+        if event then
+            if NPCFolder then
+                for _, npc in pairs(NPCFolder:GetChildren()) do
+                    createNameTag(npc)
+                end
+                NPCFolder.ChildAdded:Connect(createNameTag)
+            end
+        else
+            if NPCFolder then
+                for _, npc in pairs(NPCFolder:GetChildren()) do
+                    removeNameTag(npc)
+                end
+            end
+        end
     end)
-    Main:AddSlider("NPCNameSlider", {Text = "Npc Name Font Size", Min = 1, Max = 70, Default = 15, Rounding = 0})
+    Main:AddSlider("NPCNameSlider", {
+        Text = "Npc Name Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
 
     Main:AddToggle("DepthsESP", {Text = "Whirlpool ESP", Default = false}):AddColorPicker("DepthsESPColor", {Default = Color3.fromRGB(0, 255, 255)}):OnChanged(function(event)
         toggleESP(event, workspace, function(model)
@@ -484,13 +549,55 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
 
     Main:AddToggle("ShipsESP", {Text = "Ship ESP", Default = false}):AddColorPicker("ShipESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
         local ShipFolder = workspace:FindFirstChild("Ships")
-        toggleESP(event, ShipFolder, function(ship)
-            createNameTag(ship.PrimaryPart, ship.Name, Options.ShipESPColor.Value, Options.ShipNameSlider.Value)
-        end, function(ship)
-            removeNameTag(ship.PrimaryPart)
-        end)
+        
+        local function createNameTag(ship)
+            if ship:IsA("Model") and ship.PrimaryPart and not ship.PrimaryPart:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui", ship.PrimaryPart)
+                billboard.Name = "NameTag"
+                billboard.Size = UDim2.new(2, 0, 1, 0)
+                billboard.StudsOffset = Vector3.new(0, 3, 0)
+                billboard.AlwaysOnTop = true
+                
+                local label = Instance.new("TextLabel", billboard)
+                label.Size = UDim2.new(1, 0, 1, 0)
+                label.BackgroundTransparency = 1
+                label.TextColor3 = Options.ShipESPColor.Value
+                label.TextScaled = false
+                label.TextSize = Options.ShipNameSlider.Value
+                label.Font = Enum.Font.Gotham
+                label.Text = ship.Name
+            end
+        end
+        
+        local function removeNameTag(ship)
+            if ship:IsA("Model") and ship.PrimaryPart and ship.PrimaryPart:FindFirstChild("NameTag") then
+                ship.PrimaryPart.NameTag:Destroy()
+            end
+        end
+    
+        if event then
+            if ShipFolder then
+                for _, ship in pairs(ShipFolder:GetChildren()) do
+                    createNameTag(ship)
+                end
+                ShipFolder.ChildAdded:Connect(createNameTag)
+            end
+        else
+            if ShipFolder then
+                for _, ship in pairs(ShipFolder:GetChildren()) do
+                    removeNameTag(ship)
+                end
+            end
+        end
     end)
-    Main:AddSlider("ShipNameSlider", {Text = "Ships Font Size", Min = 1, Max = 70, Default = 15, Rounding = 0})
+    
+    Main:AddSlider("ShipNameSlider", {
+        Text = "Ships Font Size", 
+        Min = 1, 
+        Max = 70, 
+        Default = 15, 
+        Rounding = 0
+    })
 end
 
 -- TELEPORTING

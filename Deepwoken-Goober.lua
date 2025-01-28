@@ -626,8 +626,57 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
     local Main = ServerBox:AddTab("Server")
     Main:AddToggle("panicbtn", {Text = "Panic Disconnect", Default = false, Tooltip = "Disconnects You From The Server"}):OnChanged(function(event)
         if event then game.Players.LocalPlayer:Kick("Goober Client: Panic Button Clicked.") end
-    end)    
-
+    end) 
+    local playerWarningDistance = 5000
+    local warnedPlayers = {}
+    Main:AddToggle("playerdiswaring", {
+        Text = "Nearby Player Warning",
+        Default = false,
+        Tooltip = "Warns You Of Nearby Players"
+    }):OnChanged(function(enabled)
+        if enabled then
+            local function calculateDistance(position1, position2)
+                return (position1 - position2).Magnitude
+            end
+            local playerCheckLoop = RunService.RenderStepped:Connect(function()
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                        local playerPosition = player.Character.HumanoidRootPart.Position
+                        local localPlayerPosition = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.Position
+    
+                        if localPlayerPosition then
+                            local distance = calculateDistance(localPlayerPosition, playerPosition)
+    
+                            if distance <= playerWarningDistance then
+                                if not warnedPlayers[player] then
+                                    warnedPlayers[player] = true
+                                    Library:Notify(string.format("Player %s is nearby! Distance: %.2f", player.Name, distance))
+                                end
+                            else
+                                warnedPlayers[player] = nil
+                            end
+                        end
+                    end
+                end
+            end)
+            Main:GetToggle("playerdiswaring"):OnChanged(function(newState)
+                if not newState then
+                    playerCheckLoop:Disconnect()
+                    warnedPlayers = {}
+                end
+            end)
+        end
+    end)
+    Main:AddSlider("playerdiswaringslider", {
+        Text = "Player Warning Distance", 
+        Min = 1, 
+        Max = 10000, 
+        Default = playerWarningDistance, 
+        Rounding = 0
+    }):OnChanged(function(value)
+        playerWarningDistance = value
+    end)
+    
     local SpawnPart
 
     Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function(event)

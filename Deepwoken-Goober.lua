@@ -89,61 +89,95 @@ local function AllowRagdoll(Toggle)
     Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
     Humanoid:ChangeState(Enum.HumanoidStateType.Running)
 end
+local firstLoad = true
 
-local function ToggleFly(Toggle)
-    if toggle then
-        if flyForce then return end
-        if not Toggles.AntiRagdoll.Value then AllowRagdoll(false) end
-    
-        workspace.Gravity = 0
-        flyForce = Instance.new("BodyVelocity", humanoidRootPart)
-        flyForce.Velocity = Vector3.zero
-        flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    
-        humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-    
-        conn = game:GetService("RunService").Heartbeat:Connect(function()
-            local moveDirection = Vector3.zero
-            local keyMap = {
-                [Enum.KeyCode.W] = Vector3.new(0, 0, 1),
-                [Enum.KeyCode.S] = Vector3.new(0, 0, -1),
-                [Enum.KeyCode.A] = Vector3.new(-1, 0, 0),
-                [Enum.KeyCode.D] = Vector3.new(1, 0, 0),
-                [Enum.KeyCode.Space] = Vector3.new(0, 1, 0),
-                [Enum.KeyCode.LeftControl] = Vector3.new(0, -1, 0)
-            }
-
-            for key, direction in pairs(keyMap) do
-                if UIS:IsKeyDown(key) then
-                    moveDirection += camera.CFrame:VectorToWorldSpace(direction)
-                end
-            end
-    
-            flyForce.Velocity = moveDirection.Magnitude > 0 and moveDirection.Unit * Options.FlightSlider.Value or Vector3.zero
-        end)
-    else
-        if flyForce then
-            flyForce:Destroy()
-            flyForce = nil
-        end
-        if not Toggles.AntiRagdoll.Value then
-            AllowRagdoll(true)
-        end
-        if conn then
-            conn:Disconnect()
-            conn = nil
-        end
-    
-        workspace.Gravity = originalGravity
-    
-        for _, child in pairs(humanoidRootPart:GetChildren()) do
-            if child:IsA("BodyGyro") then
-                child:Destroy()
-            end
-        end
-    
-        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+local function onPlayerAdded(player)
+    if firstLoad then
+        task.wait(3)
+        firstLoad = false
     end
+    if Toggles and Toggles.moddc and Toggles.moddc.Value then
+        if player:IsInGroup(5212858) then
+            local dcText = "Moderator detected: " .. player.Name .. ". Disconnecting..."
+            Library:Notify(dcText)
+            SendNotification(dcText)
+            task.wait(1)
+            game.Players.LocalPlayer:Kick("Goober Client: Mod Detected.")
+        end
+    end
+end
+
+game.Players.PlayerAdded:Connect(onPlayerAdded)
+
+
+local function startFlying()
+    if flyForce then return end
+    if not Toggles.AntiRagdoll.Value then
+        AllowRagdoll(false)
+    end
+    workspace.Gravity = 0
+
+    flyForce = Instance.new("BodyVelocity")
+    flyForce.Velocity = Vector3.new(0, 0, 0)
+    flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    flyForce.Parent = humanoidRootPart
+
+    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+
+    conn = game:GetService("RunService").Heartbeat:Connect(function()
+        local camera = workspace.CurrentCamera
+        local lookVector = camera.CFrame.LookVector
+        local rightVector = camera.CFrame.RightVector
+
+        local moveDirection = Vector3.new(0, 0, 0)
+
+        if UIS:IsKeyDown(Enum.KeyCode.W) then
+            moveDirection = moveDirection + lookVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then
+            moveDirection = moveDirection - lookVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.A) then
+            moveDirection = moveDirection - rightVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.D) then
+            moveDirection = moveDirection + rightVector
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.Space) then
+            moveDirection = moveDirection + Vector3.new(0, 1, 0)
+        end
+        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then
+            moveDirection = moveDirection - Vector3.new(0, 1, 0)
+        end
+        if moveDirection.Magnitude > 0 then
+            flyForce.Velocity = moveDirection.Unit * Options.FlightSlider.Value
+        else
+            flyForce.Velocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+local function stopFlying()
+    if flyForce then
+        flyForce:Destroy()
+        flyForce = nil
+    end
+    if not Toggles.AntiRagdoll.Value then
+        AllowRagdoll(true)
+    end
+    if conn then
+        conn:Disconnect()
+        conn = nil
+    end
+
+    workspace.Gravity = originalGravity
+
+    for _, child in pairs(humanoidRootPart:GetChildren()) do
+        if child:IsA("BodyGyro") then
+            child:Destroy()
+        end
+    end
+
+    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 end
 
 local function teleportToCoordinates(x, y, z, duration)
@@ -213,6 +247,8 @@ local function ResetCollisions(Character)
     end
 end
 
+Players.PlayerAdded:Connect(onPlayerAdded)
+
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
     ResetCollisions(Character)
@@ -245,10 +281,13 @@ end
 local MovementTab = Window:AddTab("Movement")
 local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
     local Main = SpeedBox:AddTab("Speed")
-    Main:AddDropdown("SpeedMode", {AllowNull = false, Text = "Speed Mode", Default = "Walk", Values = {
-        "Walk", "Force-Velo", "Force-Direction"
-    }})
 
+    Main:AddDropdown("SpeedMode", {AllowNull = false, Text = "Speed Mode", Default = "Walk", Values = {
+        "Walk",
+        "Force-Velo",
+        "Force-Direction"
+    }})
+    
     Main:AddSlider("WalkSpeedSlider", {
         Text = "Walk Speed", 
         Min = 1, 
@@ -258,43 +297,78 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
         Tooltip = "Default Value is 16."
     }):OnChanged(function()
         getgenv().WalkSpeedValue = Options.WalkSpeedSlider.Value
+        local Player = game:service'Players'.LocalPlayer
         local Humanoid = Player.Character and Player.Character:FindFirstChildOfClass('Humanoid')
         local HumanoidRootPart = Player.Character and Player.Character:FindFirstChild("HumanoidRootPart")
-        
+        local UIS = game:GetService'UserInputService'
+    
         if Humanoid and HumanoidRootPart then
-            local speedMode = Options.SpeedMode.Value
-            local velocityFunc
-
-            if speedMode == "Walk" then
-                Humanoid.WalkSpeed = getgenv().WalkSpeedValue
-            elseif speedMode == "Force-Direction" then
-                velocityFunc = function()
-                    local direction = getKeyDirection()
-                    if direction.Magnitude > 0 then
-                        applyVelocity(direction.Unit)
-                    end
+            if UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S) or UIS:IsKeyDown(Enum.KeyCode.D) then
+                if Options.SpeedMode.Value == "Walk" then
+                    Humanoid.WalkSpeed = getgenv().WalkSpeedValue
+    
+                elseif Options.SpeedMode.Value == "Force-Direction" then
+                    game:GetService("RunService").Heartbeat:Connect(function()
+                        if UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S) or UIS:IsKeyDown(Enum.KeyCode.D) then
+                            if HumanoidRootPart then
+                                local velocity = HumanoidRootPart.Velocity
+                                local direction = Vector3.new(0, 0, 0)
+    
+                                if UIS:IsKeyDown(Enum.KeyCode.W) then
+                                    direction = direction + HumanoidRootPart.CFrame.LookVector
+                                end
+                                if UIS:IsKeyDown(Enum.KeyCode.S) then
+                                    direction = direction - HumanoidRootPart.CFrame.LookVector
+                                end
+                                if UIS:IsKeyDown(Enum.KeyCode.A) then
+                                    direction = direction - HumanoidRootPart.CFrame.RightVector
+                                end
+                                if UIS:IsKeyDown(Enum.KeyCode.D) then
+                                    direction = direction + HumanoidRootPart.CFrame.RightVector
+                                end
+    
+                                if direction.Magnitude > 0 then
+                                    direction = direction.Unit
+                                end
+    
+                                local newVelocity = direction * Options.WalkSpeedSlider.Value
+                                HumanoidRootPart.Velocity = Vector3.new(newVelocity.X, velocity.Y, newVelocity.Z)
+                            end
+                        end
+                    end)
+    
+                elseif Options.SpeedMode.Value == "Force-Velo" then
+                    game:GetService("RunService").Heartbeat:Connect(function()
+                        if (UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S)) and not UIS:IsKeyDown(Enum.KeyCode.D) then
+                            if HumanoidRootPart then
+                                local velocity = HumanoidRootPart.Velocity
+                                local direction = HumanoidRootPart.CFrame.LookVector
+    
+                                local newVelocity = direction * Options.WalkSpeedSlider.Value
+                                HumanoidRootPart.Velocity = Vector3.new(newVelocity.X, velocity.Y, newVelocity.Z)
+                            end
+                        end
+                    end)
                 end
-            elseif speedMode == "Force-Velo" then
-                velocityFunc = function()
-                    if UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S) then
-                        applyVelocity(HumanoidRootPart.CFrame.LookVector)
-                    end
-                end
-            end
-            if velocityFunc then
-                game:GetService("RunService").Heartbeat:Connect(velocityFunc)
             end
         end
     end)
+    
 
     local AntiKBConnection
 
     Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function(event)
         local RunService = game:GetService("RunService")
-        
+        local Player = game.Players.LocalPlayer
+        local Character = Player.Character or Player.CharacterAdded:Wait()
+        local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    
         if event then
             AntiKBConnection = RunService.RenderStepped:Connect(function()
-                if not (UIS:IsKeyDown(Enum.KeyCode.W) or UIS:IsKeyDown(Enum.KeyCode.A) or UIS:IsKeyDown(Enum.KeyCode.S) or UIS:IsKeyDown(Enum.KeyCode.D)) then
+                if not UserInputService:IsKeyDown(Enum.KeyCode.W) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.A) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.S) and
+                   not UserInputService:IsKeyDown(Enum.KeyCode.D) then
                     HumanoidRootPart.Velocity = Vector3.zero
                 end
             end)
@@ -305,13 +379,23 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
             end
         end
     end)
+    
+    
 end
 
 local FlyBox = MovementTab:AddRightTabbox("Main")
 local Main = FlyBox:AddTab("Fly")
 Main:AddToggle("Flight", { Text = "Flight", Default = false }):OnChanged(function(event)
-    ToggleFly(event)
+    local Player = game:GetService'Players'.LocalPlayer
+    local UIS = game:GetService'UserInputService'
+
+    if event then
+        startFlying()
+    else
+        stopFlying()
+    end
 end)
+
 Main:AddSlider("FlightSlider", {
     Text = "Fly Speed", 
     Min = 1, 
@@ -319,8 +403,12 @@ Main:AddSlider("FlightSlider", {
     Default = 50, 
     Rounding = 0
 })
+
 local JumpConnection
 Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChanged(function(event)
+    local Player = game:GetService'Players'.LocalPlayer
+    local UIS = game:GetService'UserInputService'
+
     if event then
         function Action(Object, Function)
             if Object ~= nil then
@@ -345,6 +433,7 @@ Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChang
         end
     end
 end)
+
 Main:AddSlider("JumpFlySlider", {
     Text = "Jump Height", 
     Min = 1, 
@@ -353,6 +442,7 @@ Main:AddSlider("JumpFlySlider", {
     Rounding = 0,
     Tooltip = "Default Value is 50."
 })
+
 
 -- VISUALS
 local VisualTab = Window:AddTab("Visual")
@@ -547,7 +637,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
     end)
     Main:AddSlider("WhirlpoolNameSlider", {Text = "Whirlpool Font Size", Min = 1, Max = 70, Default = 15, Rounding = 0})
 
-    Main:AddToggle("ShipsESP", {Text = "Ship ESP", Default = false}):AddColorPicker("ShipESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
+    Main:AddToggle("ShipsESP", {Text = "Ship ESP", Default = false}):AddColorPicker("ShipESPColor", {Default = Color3.fromRGB(255, 255, 0)}):OnChanged(function(event)
         local ShipFolder = workspace:FindFirstChild("Ships")
         
         local function createNameTag(ship)
@@ -600,6 +690,62 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
     })
 end
 
+local OverlayBox = VisualTab:AddRightTabbox("Overlay") do
+    local Main = OverlayBox:AddTab("Overlay")
+    Main:AddToggle("SanityBarOverlay", {Text = "Sanity Bar", Default = false}):OnChanged(function(event)
+        local playerName = LocalPlayer.Name
+        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+        local liveFolder = game.Workspace:FindFirstChild("Live")
+        local playerModel = liveFolder and liveFolder:FindFirstChild(playerName)
+        local statsGui = playerGui:FindFirstChild("StatsGui")
+        local survivalStats = statsGui:FindFirstChild("SurvivalStats")
+        local waterFrame = survivalStats:FindFirstChild("Water")
+        
+        local sanityObject = playerModel and playerModel:FindFirstChild("Sanity")
+        local sanity = sanityObject and sanityObject:IsA("DoubleConstrainedValue") and sanityObject.Value or nil
+        local maxSanity = sanityObject and sanityObject:IsA("DoubleConstrainedValue") and sanityObject.MaxValue or nil
+        if event then
+            if playerGui and statsGui and statsGui:IsA("ScreenGui") and survivalStats and survivalStats:IsA("Frame") and waterFrame and waterFrame:IsA("Frame") then
+                local sanityFrame = survivalStats:FindFirstChild("Sanity")
+                if not sanityFrame and event then
+                    sanityFrame = waterFrame:Clone()
+                    sanityFrame.Name = "Sanity"
+                    sanityFrame.Parent = survivalStats
+                    sanityFrame.Position = UDim2.new(0, 72, 1, 0)
+                    local slider = sanityFrame:FindFirstChild("Slider")
+                    if slider and slider:IsA("Frame") then
+                        slider.BackgroundColor3 = Color3.fromRGB(0, 40, 150)
+                        if maxSanity and maxSanity > 0 then
+                            slider.Size = UDim2.fromScale(1, sanity / maxSanity)
+                        end
+                    end
+                end
+                if sanityObject and maxSanity then
+                    print("step6")
+                    sanityObject.Changed:Connect(function()
+                        if sanityFrame and sanityFrame.Parent then
+                            local slider = sanityFrame:FindFirstChild("Slider")
+                            if slider then
+                                if maxSanity and maxSanity > 0 then
+                                    slider.Size = UDim2.fromScale(1, sanityObject.Value / maxSanity)
+                                end
+                            end
+                        end
+                    end)
+                end
+            end
+        else
+            local existingSanity = survivalStats:FindFirstChild("Sanity")
+            if existingSanity then
+                existingSanity:Destroy()
+            end
+        end
+    end)
+    
+    
+end
+
+
 -- TELEPORTING
 local TeleportTab = Window:AddTab("Teleports")
 local DeepwokenPOISBox = TeleportTab:AddLeftTabbox("DeepwokenPOIs") do 
@@ -627,11 +773,11 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
     Main:AddToggle("panicbtn", {Text = "Panic Disconnect", Default = false, Tooltip = "Disconnects You From The Server"}):OnChanged(function(event)
         if event then game.Players.LocalPlayer:Kick("Goober Client: Panic Button Clicked.") end
     end) 
-    local playerWarningDistance = 5000
+    local playerWarningDistance = 1000
     local warnedPlayers = {}
     Main:AddToggle("playerdiswaring", {
         Text = "Nearby Player Warning",
-        Default = false,
+        Default = true,
         Tooltip = "Warns You Of Nearby Players"
     }):OnChanged(function(enabled)
         if enabled then
@@ -659,12 +805,9 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
                     end
                 end
             end)
-            Main:GetToggle("playerdiswaring"):OnChanged(function(newState)
-                if not newState then
-                    playerCheckLoop:Disconnect()
-                    warnedPlayers = {}
-                end
-            end)
+        else
+            playerCheckLoop:Disconnect()
+            warnedPlayers = {}
         end
     end)
     Main:AddSlider("playerdiswaringslider", {
@@ -700,6 +843,10 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
             end
         end
     end)
+    Main:AddToggle("moddc", {Text = "Disconnect On Mod Join", Default = true}):OnChanged(function(event)
+
+    end)
+
 end
 local FunnyBox = MiscTab:AddRightTabbox("Funny") do
     local Main = FunnyBox:AddTab("Funny")
@@ -786,6 +933,43 @@ local FunnyBox = MiscTab:AddRightTabbox("Funny") do
         end
         if event then CopyMantras() end
     end)    
+
+end
+
+local RandomBox = MiscTab:AddLeftTabbox("Random") do
+    local Main = RandomBox:AddTab("Random")
+    Main:AddToggle("autoFriends", {Text = "Auto Charisma", Default = false, Tooltip = "Auto Does How To Make Friends"}):OnChanged(function(enabled)
+        
+        while enabled do
+            local choicePrompt = game.Players.LocalPlayer.PlayerGui:FindFirstChild("ChoicePrompt")
+            
+            if choicePrompt then
+                local choiceFrame = choicePrompt:FindFirstChild("ChoiceFrame")
+                if choiceFrame then
+                    local popup = choiceFrame:FindFirstChild("Popup")
+                    if popup then
+                        local mouseButton1ClickSignal = popup:FindFirstChild("MouseButton1Click")
+                        if mouseButton1ClickSignal then
+                            firesignal(mouseButton1ClickSignal)
+                            wait(0.1)
+                            popup = choiceFrame:FindFirstChild("Popup")
+                            if popup then
+                                local mouseButton1ClickSignal = popup:FindFirstChild("MouseButton1Click")
+                                if mouseButton1ClickSignal then
+                                    firesignal(mouseButton1ClickSignal)
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                while choicePrompt and choicePrompt.Parent do
+                    wait(0.1)
+                end
+            end
+            wait(0.1)
+        end
+    end)
 end
 
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
@@ -806,7 +990,7 @@ end
 -- INFO
 local InfoTab = Window:AddTab("Info")
 local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
-    local Main = CreditsBox:AddTab("Made By swig5")
+    local Main = CreditsBox:AddTab("Made By swig5 & catpics")
     Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function(event)
         if event then
             setclipboard("https://discord.gg/mushroom")

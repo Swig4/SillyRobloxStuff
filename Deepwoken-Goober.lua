@@ -20,16 +20,24 @@ local Player = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Workspace = game:GetService("Workspace")
 local UIS = game:GetService'UserInputService'
-local character = Player.Character or Player.CharacterAdded:Wait()
+local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+local HumanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
+local Character = game.Players.LocalPlayer.Character
+local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 
 local flyForce
 local conn
-local humanoidRootPart = game.Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")
-local humanoid = game.Players.LocalPlayer.Character:WaitForChild("Humanoid")
 local originalGravity = workspace.Gravity
 local FLY_SPEED = 50
 local noclip = false
 local NoClipFirstEnabled = false
+local SpawnPart
+local originalServerInfo = nil
+local originalPlayername = nil
+local originalPlayerList = nil
+local healthLabels = {}
+
+local ShowLeaderBoardToggle = true
 
 -- functions
 local function createNameTag(parent, name, color, textSize)
@@ -69,7 +77,6 @@ local function toggleESP(event, folder, createFn, removeFn)
 end
 
 local function toggleHealthLabels(event, player, createFn, removeFn)
-    local healthLabels = {}
     local function onCharacterAdded(character)
         if character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
             createFn(character, player)
@@ -85,12 +92,15 @@ local function toggleHealthLabels(event, player, createFn, removeFn)
 end
 
 local function AllowRagdoll(Toggle)
-    local Humanoid = LocalPlayer.Character:WaitForChild("Humanoid")
-    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
-    Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    if Humanoid then
+        Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
+        Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+    else
+        warn("Humanoid is nil, cannot change ragdoll state.")
+    end
 end
-local firstLoad = true
 
+local firstLoad = true
 local function onPlayerAdded(player)
     if firstLoad then
         task.wait(3)
@@ -109,7 +119,6 @@ end
 
 game.Players.PlayerAdded:Connect(onPlayerAdded)
 
-
 local function startFlying()
     if flyForce then return end
     if not Toggles.AntiRagdoll.Value then
@@ -120,15 +129,13 @@ local function startFlying()
     flyForce = Instance.new("BodyVelocity")
     flyForce.Velocity = Vector3.new(0, 0, 0)
     flyForce.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-    flyForce.Parent = humanoidRootPart
+    flyForce.Parent = HumanoidRootPart
 
-    humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+    Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 
     conn = game:GetService("RunService").Heartbeat:Connect(function()
-        local camera = workspace.CurrentCamera
-        local lookVector = camera.CFrame.LookVector
-        local rightVector = camera.CFrame.RightVector
-
+        local lookVector = Camera.CFrame.LookVector
+        local rightVector = Camera.CFrame.RightVector
         local moveDirection = Vector3.new(0, 0, 0)
 
         if UIS:IsKeyDown(Enum.KeyCode.W) then
@@ -171,29 +178,29 @@ local function stopFlying()
 
     workspace.Gravity = originalGravity
 
-    for _, child in pairs(humanoidRootPart:GetChildren()) do
+    for _, child in pairs(HumanoidRootPart:GetChildren()) do
         if child:IsA("BodyGyro") then
             child:Destroy()
         end
     end
 
-    humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
 end
 
 local function teleportToCoordinates(x, y, z, duration)
     local bodyVelocity = Instance.new("BodyVelocity")
     bodyVelocity.MaxForce = Vector3.new(400000, 400000, 400000) 
     bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-    bodyVelocity.Parent = humanoidRootPart
+    bodyVelocity.Parent = HumanoidRootPart
 
-    local startPosition = humanoidRootPart.Position
+    local startPosition = HumanoidRootPart.Position
     local targetPosition = Vector3.new(x, y, z)
     local startTime = tick()
-    while (humanoidRootPart.Position - targetPosition).Magnitude > 0.1 do
+    while (HumanoidRootPart.Position - targetPosition).Magnitude > 0.1 do
         local elapsed = tick() - startTime
         local progress = math.min(elapsed / duration, 1)
         local newPosition = startPosition:Lerp(targetPosition, progress)
-        humanoidRootPart.CFrame = CFrame.new(newPosition)
+        HumanoidRootPart.CFrame = CFrame.new(newPosition)
         wait(0.03)
     end
     bodyVelocity:Destroy()
@@ -204,15 +211,6 @@ local function SendNotification(message)
         Title = "Goober Client",
         Text = message
     })
-end
-
-local function getKeyDirection()
-    local direction = Vector3.new(0, 0, 0)
-    if UIS:IsKeyDown(Enum.KeyCode.W) then direction = direction + Player.Character.HumanoidRootPart.CFrame.LookVector end
-    if UIS:IsKeyDown(Enum.KeyCode.S) then direction = direction - Player.Character.HumanoidRootPart.CFrame.LookVector end
-    if UIS:IsKeyDown(Enum.KeyCode.A) then direction = direction - Player.Character.HumanoidRootPart.CFrame.RightVector end
-    if UIS:IsKeyDown(Enum.KeyCode.D) then direction = direction + Player.Character.HumanoidRootPart.CFrame.RightVector end
-    return direction
 end
 
 local function applyVelocity(velocity)
@@ -247,8 +245,6 @@ local function ResetCollisions(Character)
     end
 end
 
-Players.PlayerAdded:Connect(onPlayerAdded)
-
 game.Players.LocalPlayer.CharacterAdded:Connect(function(Character)
     Character:WaitForChild("HumanoidRootPart")
     ResetCollisions(Character)
@@ -282,7 +278,7 @@ local MovementTab = Window:AddTab("Movement")
 local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
     local Main = SpeedBox:AddTab("Speed")
 
-    Main:AddDropdown("SpeedMode", {AllowNull = false, Text = "Speed Mode", Default = "Walk", Values = {
+    Main:AddDropdown("SpeedMode", {AllowNull = false, Text = "Speed Mode", Default = "Force-Direction", Values = {
         "Walk",
         "Force-Velo",
         "Force-Direction"
@@ -359,8 +355,6 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
 
     Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function(event)
         local RunService = game:GetService("RunService")
-        local Player = game.Players.LocalPlayer
-        local Character = Player.Character or Player.CharacterAdded:Wait()
         local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
     
         if event then
@@ -386,9 +380,6 @@ end
 local FlyBox = MovementTab:AddRightTabbox("Main")
 local Main = FlyBox:AddTab("Fly")
 Main:AddToggle("Flight", { Text = "Flight", Default = false }):OnChanged(function(event)
-    local Player = game:GetService'Players'.LocalPlayer
-    local UIS = game:GetService'UserInputService'
-
     if event then
         startFlying()
     else
@@ -406,8 +397,6 @@ Main:AddSlider("FlightSlider", {
 
 local JumpConnection
 Main:AddToggle("INFJumps", { Text = "Infinite Jumps", Default = false }):OnChanged(function(event)
-    local Player = game:GetService'Players'.LocalPlayer
-    local UIS = game:GetService'UserInputService'
 
     if event then
         function Action(Object, Function)
@@ -497,14 +486,13 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         end
     end)
 
+
     Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function(event)
-        local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
-        local healthLabels = {}
-    
+        
         local function createHealthLabel(character, player)
             if character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
-                local humanoid = character.Humanoid
+                if player == game.Players.LocalPlayer then return end
                 local billboard = Instance.new("BillboardGui", character.HumanoidRootPart)
                 billboard.Name = "HealthDisplay"
                 billboard.Size = UDim2.new(3, 0, 0.5, 0)
@@ -521,8 +509,8 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 label.Text = ""
     
                 local connection = RunService.RenderStepped:Connect(function()
-                    if humanoid and humanoid.Health > 0 then
-                        local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
+                    if Humanoid and Humanoid.Health > 0 then
+                        local healthPercent = math.floor((Humanoid.Health / Humanoid.MaxHealth) * 100)
                         label.Text = string.format("%s | %d%%", player.Name, healthPercent)
                     else
                         label.Text = string.format("%s | 0%%", player.Name)
@@ -532,6 +520,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 healthLabels[player] = {billboard = billboard, connection = connection}
             end
         end
+    
         local function removeHealthLabel(player)
             if healthLabels[player] then
                 local data = healthLabels[player]
@@ -554,18 +543,13 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                     createHealthLabel(character, player)
                 end)
             end
-    
-            Players.PlayerAdded:Connect(function(player)
-                player.CharacterAdded:Connect(function(character)
-                    createHealthLabel(character, player)
-                end)
-            end)
         else
             for _, player in pairs(Players:GetPlayers()) do
                 removeHealthLabel(player)
             end
         end
-    end)   
+    end)
+    
     Main:AddSlider("HPSlider", {
         Text = "Hp Font Size", 
         Min = 1, 
@@ -574,8 +558,11 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Rounding = 0
     })
 
+    local npcTags = {}
+
     Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
         local NPCFolder = workspace:FindFirstChild("NPCs")
+        
         local function createNameTag(npc)
             if npc:FindFirstChild("HumanoidRootPart") and not npc:FindFirstChild("NameTag") then
                 local billboard = Instance.new("BillboardGui", npc.HumanoidRootPart)
@@ -583,7 +570,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 billboard.Size = UDim2.new(2, 0, 1, 0)
                 billboard.StudsOffset = Vector3.new(0, 3, 0)
                 billboard.AlwaysOnTop = true
-                
+    
                 local label = Instance.new("TextLabel", billboard)
                 label.Size = UDim2.new(1, 0, 1, 0)
                 label.BackgroundTransparency = 1
@@ -592,30 +579,31 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 label.TextSize = Options.NPCNameSlider.Value
                 label.Font = Enum.Font.Gotham
                 label.Text = npc.Name
+    
+                npcTags[npc] = billboard
             end
         end
-        
+    
         local function removeNameTag(npc)
-            if npc:FindFirstChild("NameTag") then
-                npc.NameTag:Destroy()
+            if npcTags[npc] then
+                npcTags[npc]:Destroy()
+                npcTags[npc] = nil
             end
         end
-
+    
         if event then
             if NPCFolder then
                 for _, npc in pairs(NPCFolder:GetChildren()) do
                     createNameTag(npc)
                 end
-                NPCFolder.ChildAdded:Connect(createNameTag)
             end
         else
-            if NPCFolder then
-                for _, npc in pairs(NPCFolder:GetChildren()) do
-                    removeNameTag(npc)
-                end
+            for npc, tag in pairs(npcTags) do
+                tag:Destroy()
             end
+            npcTags = {}
         end
-    end)
+    end)    
     Main:AddSlider("NPCNameSlider", {
         Text = "Npc Name Font Size", 
         Min = 1, 
@@ -694,7 +682,6 @@ local OverlayBox = VisualTab:AddRightTabbox("Overlay") do
     local Main = OverlayBox:AddTab("Overlay")
     Main:AddToggle("SanityBarOverlay", {Text = "Sanity Bar", Default = false}):OnChanged(function(event)
         local playerName = LocalPlayer.Name
-        local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
         local liveFolder = game.Workspace:FindFirstChild("Live")
         local playerModel = liveFolder and liveFolder:FindFirstChild(playerName)
         local statsGui = playerGui:FindFirstChild("StatsGui")
@@ -721,7 +708,6 @@ local OverlayBox = VisualTab:AddRightTabbox("Overlay") do
                     end
                 end
                 if sanityObject and maxSanity then
-                    print("step6")
                     sanityObject.Changed:Connect(function()
                         if sanityFrame and sanityFrame.Parent then
                             local slider = sanityFrame:FindFirstChild("Slider")
@@ -740,6 +726,50 @@ local OverlayBox = VisualTab:AddRightTabbox("Overlay") do
                 existingSanity:Destroy()
             end
         end
+    end)
+
+    
+
+    Main:AddToggle("StreamerMode", {Text = "Streamer Mode", Default = false}):OnChanged(function(enabled)
+        local infoFrame = Player.PlayerGui:FindFirstChild("WorldInfo") and Player.PlayerGui.WorldInfo:FindFirstChild("InfoFrame")
+        local leaderboardGui = Player.PlayerGui:FindFirstChild("LeaderboardGui")
+    
+        if infoFrame then
+            local serverInfo = infoFrame:FindFirstChild("ServerInfo")
+            local Playername = infoFrame:FindFirstChild("CharacterInfo")
+    
+            if enabled then
+                if serverInfo and not originalServerInfo then
+                    originalServerInfo = serverInfo
+                    serverInfo.Parent = nil
+                end
+                if Playername and not originalPlayername then
+                    originalPlayername = Playername
+                    Playername.Parent = nil
+                end
+                if leaderboardGui and not ShowLeaderBoardToggle and not originalPlayerList then
+                    originalPlayerList = leaderboardGui
+                    leaderboardGui.Parent = nil
+                end
+            else
+                if originalServerInfo then
+                    originalServerInfo.Parent = infoFrame
+                    originalServerInfo = nil
+                end
+                if originalPlayername then
+                    originalPlayername.Parent = infoFrame
+                    originalPlayername = nil
+                end
+                if originalPlayerList and not ShowLeaderBoardToggle then
+                    originalPlayerList.Parent = Player.PlayerGui
+                    originalPlayerList = nil
+                end
+            end
+        end
+    end)
+    
+    Main:AddToggle("leaderboardShowToggle", {Text = "Show Leaderboard", Default = true, Tooltip = "Show Leaderboard for streamer mode"}):OnChanged(function(event)
+        ShowLeaderBoardToggle = event
     end)
     
     
@@ -760,7 +790,7 @@ local DeepwokenPOISBox = TeleportTab:AddLeftTabbox("DeepwokenPOIs") do
         elseif Options.locationteleport.Value == "Isle Of Vigils" then
             teleportToCoordinates(-2439.9, 195.7, 2934.5, 5)
         elseif Options.locationteleport.Value == "Test" then
-            local currentPosition = humanoidRootPart.Position
+            local currentPosition = HumanoidRootPart.Position
             print("Current Location: X = " .. currentPosition.X .. ", Y = " .. currentPosition.Y .. ", Z = " .. currentPosition.Z)
         end
     end)
@@ -775,6 +805,8 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
     end) 
     local playerWarningDistance = 1000
     local warnedPlayers = {}
+    local playerCheckLoop = nil
+    
     Main:AddToggle("playerdiswaring", {
         Text = "Nearby Player Warning",
         Default = true,
@@ -784,7 +816,8 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
             local function calculateDistance(position1, position2)
                 return (position1 - position2).Magnitude
             end
-            local playerCheckLoop = RunService.RenderStepped:Connect(function()
+    
+            playerCheckLoop = RunService.RenderStepped:Connect(function()
                 for _, player in pairs(Players:GetPlayers()) do
                     if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
                         local playerPosition = player.Character.HumanoidRootPart.Position
@@ -806,10 +839,13 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
                 end
             end)
         else
-            playerCheckLoop:Disconnect()
+            if playerCheckLoop then
+                playerCheckLoop:Disconnect()
+                playerCheckLoop = nil
+            end
             warnedPlayers = {}
         end
-    end)
+    end)    
     Main:AddSlider("playerdiswaringslider", {
         Text = "Player Warning Distance", 
         Min = 1, 
@@ -820,9 +856,9 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
         playerWarningDistance = value
     end)
     
-    local SpawnPart
 
-    Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Spawns A Part Below You."}):OnChanged(function(event)
+
+    Main:AddToggle("partSpawn", {Text = "Make Platform", Default = false, Tooltip = "Client Side Only, Will AA Gun you"}):OnChanged(function(event)
         if event then
             if not SpawnPart then
                 if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
@@ -843,9 +879,7 @@ local ServerBox = MiscTab:AddLeftTabbox("Server") do
             end
         end
     end)
-    Main:AddToggle("moddc", {Text = "Disconnect On Mod Join", Default = true}):OnChanged(function(event)
-
-    end)
+    Main:AddToggle("moddc", {Text = "Disconnect On Mod Join", Default = true})
 
 end
 local FunnyBox = MiscTab:AddRightTabbox("Funny") do
@@ -892,48 +926,7 @@ local FunnyBox = MiscTab:AddRightTabbox("Funny") do
         end
     
         if event then CopyTalents() end
-    end) 
-
-
-    Main:AddToggle("StealMantrasBtn", {Text = "Steal Mantras", Default = false}):OnChanged(function(event)
-    
-        local function CopyMantras()
-            local localBackpack = LocalPlayer:FindFirstChild("Backpack")
-            if not localBackpack or not localBackpack:IsA("Backpack") then
-                warn("Local player does not have a valid Backpack instance.")
-                return
-            end
-
-            local function MantraExists(mantraName)
-                for _, item in pairs(localBackpack:GetChildren()) do
-                    if item.Name == mantraName and item:IsA("Tool") then
-                        return true
-                    end
-                end
-                return false
-            end
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer then
-                    local playerFolder = Players:FindFirstChild(player.Name)
-                    local otherBackpack = player.Backpack
-    
-                    if otherBackpack then
-                        for _, item in pairs(otherBackpack:GetChildren()) do
-                            if item:IsA("Tool") and string.match(item.Name, "^Mantra:") then
-                                if not MantraExists(item.Name) then
-                                    local clonedMantra = item:Clone()
-                                    clonedMantra.Parent = localBackpack
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-            SendNotification("Done!")
-        end
-        if event then CopyMantras() end
     end)    
-
 end
 
 local RandomBox = MiscTab:AddLeftTabbox("Random") do
@@ -974,29 +967,30 @@ end
 
 local BypassesBox = MiscTab:AddRightTabbox("Bypasses") do
     local Main = BypassesBox:AddTab("Bypasses")
-    Main:AddToggle("voiceUnban", {Text = "Voicechat Bypass", Default = false, Tooltip = "Unbans You From A Voice Ban"}):OnChanged(function(event)
-        if event then
-            SendNotification("Bypassing...")
-            task.delay(2.5, function()
-                game:GetService("VoiceChatService"):joinVoice()
-                SendNotification("Bypassed!")
-            end)            
-        else
-            SendNotification("Rejoin The Game To Disable!")
-        end
-    end)
+    Main:AddButton({Text = "Voicechat Bypass", Tooltip = "Unbans You From A Voice Ban", Func = function()
+        SendNotification("Bypassing...")
+        task.delay(2.5, function()
+            game:GetService("VoiceChatService"):joinVoice()
+            SendNotification("Bypassed!")
+        end)            
+    end})
+end
+
+-- CLIENT
+local ClientTab = Window:AddTab("Client")
+local ClientBox = ClientTab:AddLeftTabbox("Client") do 
+    local Main = ClientBox:AddTab("Client")
+
 end
 
 -- INFO
 local InfoTab = Window:AddTab("Info")
 local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     local Main = CreditsBox:AddTab("Made By swig5 & catpics")
-    Main:AddToggle("DiscordBtn", {Text = "Discord Link", Default = false}):OnChanged(function(event)
-        if event then
-            setclipboard("https://discord.gg/mushroom")
-            SendNotification("Link Copied To Clipboard!")
-        end
-    end)
+    Main:AddButton({Text = "Copy Discord Link", Func = function()
+        setclipboard("https://discord.gg/mushroom")
+        SendNotification("Link Copied To Clipboard!")
+    end})    
 end
 
 local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
@@ -1005,5 +999,5 @@ local KeybindsBox = InfoTab:AddRightTabbox("Keybinds") do
 end
 local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
-    Main:AddLabel("HP Label Doesn't Disappear")
+    Main:AddLabel("None ATM!")
 end

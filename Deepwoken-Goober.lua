@@ -554,7 +554,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Text = "Hp Font Size", 
         Min = 1, 
         Max = 70, 
-        Default = 15, 
+        Default = 20, 
         Rounding = 0
     })
 
@@ -608,7 +608,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Text = "Npc Name Font Size", 
         Min = 1, 
         Max = 70, 
-        Default = 15, 
+        Default = 10, 
         Rounding = 0
     })
 

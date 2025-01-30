@@ -108,9 +108,7 @@ local function onPlayerAdded(player)
     end
     if Toggles and Toggles.moddc and Toggles.moddc.Value then
         if player:IsInGroup(5212858) then
-            local dcText = "Moderator detected: " .. player.Name .. ". Disconnecting..."
-            Library:Notify(dcText)
-            SendNotification(dcText)
+            Library:Notify("Moderator detected: " .. player.Name .. ". Disconnecting...")
             task.wait(1)
             game.Players.LocalPlayer:Kick("Goober Client: Mod Detected.")
         end

@@ -230,7 +230,7 @@ end
 
 -- ui creating & handling
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
-Library:SetWatermark("discord.gg/mushroom")
+Library:SetWatermark("Goober Client V1.0 | Deepwoken")
 Library.OutlineColor = Color3.fromRGB(49, 169, 246)
 Library.AccentColor = Color3.fromRGB(49, 169, 246)
 local Window = Library:CreateWindow({Title = 'Goober Client | Made By swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
@@ -988,7 +988,7 @@ local InfoTab = Window:AddTab("Info")
 local CreditsBox = InfoTab:AddLeftTabbox("Credits") do
     local Main = CreditsBox:AddTab("Made By swig5 & catpics")
     Main:AddButton({Text = "Copy Discord Link", Func = function()
-        setclipboard("https://discord.gg/mushroom")
+        setclipboard("https://discord.gg/xBr7Awaqfc")
         SendNotification("Link Copied To Clipboard!")
     end})    
 end

@@ -35,8 +35,14 @@ local SpawnPart
 local originalServerInfo = nil
 local originalPlayername = nil
 local originalPlayerList = nil
-local healthLabels = {}
 
+local FrameTimer = tick()
+local FrameCounter = 0
+local FPS = 60
+local healthLabels = {}
+local npcTags = {}
+
+local OutlineColor = Color3.fromRGB(49, 169, 246)
 local ShowLeaderBoardToggle = true
 
 -- functions
@@ -96,7 +102,7 @@ local function AllowRagdoll(Toggle)
         Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, Toggle)
         Humanoid:ChangeState(Enum.HumanoidStateType.Running)
     else
-        warn("Humanoid is nil, cannot change ragdoll state.")
+        print("Humanoid is nil, cannot change ragdoll state.")
     end
 end
 
@@ -106,11 +112,13 @@ local function onPlayerAdded(player)
         task.wait(3)
         firstLoad = false
     end
-    if Toggles and Toggles.moddc and Toggles.moddc.Value then
-        if player:IsInGroup(5212858) then
-            Library:Notify("Moderator detected: " .. player.Name .. ". Disconnecting...")
-            task.wait(1)
-            game.Players.LocalPlayer:Kick("Goober Client: Mod Detected.")
+    if player:IsInGroup(5212858) then
+        if Toggles and Toggles.moddc and Toggles.moddc.Value then
+                Library:Notify("Moderator detected: " .. player.Name .. ". Disconnecting...")
+                task.wait(1)
+                game.Players.LocalPlayer:Kick("Goober Client: Mod Detected.")
+        else
+            Library:Notify("Moderator detected: " .. player.Name)
         end
     end
 end
@@ -227,11 +235,39 @@ local function ToggleNoClip(Character, enable)
 end
 
 -- ui creating & handling
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/Library.lua"))()
-Library:SetWatermark("Goober Client V1.0 | Deepwoken")
-Library.OutlineColor = Color3.fromRGB(49, 169, 246)
+local repo = 'https://raw.githubusercontent.com/violin-suzutsuki/LinoriaLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+local ThemeManager = loadstring(game:HttpGet(repo .. 'addons/ThemeManager.lua'))()
+local SaveManager = loadstring(game:HttpGet(repo .. 'addons/SaveManager.lua'))()
+
+Library.OutlineColor = OutlineColor
 Library.AccentColor = Color3.fromRGB(49, 169, 246)
 local Window = Library:CreateWindow({Title = 'Goober Client | Made By swig5 | V1.0', Center = true, AutoShow = true, TabPadding = 8, MenuFadeTime = 0.2})
+
+local WatermarkConnection = game:GetService('RunService').RenderStepped:Connect(function()
+    FrameCounter += 1
+
+    if (tick() - FrameTimer) >= 1 then
+        FPS = FrameCounter;
+        FrameTimer = tick();
+        FrameCounter = 0;
+    end;
+
+    Library:SetWatermark(('Goober Client V1.0 | Deepwoken | %s fps | %s ms'):format(
+        math.floor(FPS),
+        math.floor(game:GetService('Stats').Network.ServerStatsItem['Data Ping']:GetValue())
+    ))
+end)
+
+Library:OnUnload(function()
+    WatermarkConnection:Disconnect()
+
+    SendNotification("Unloaded!")
+    Library.Unloaded = true
+    healthLabels = {}
+    npcTags = {}
+end)
+
 
 -- ON LOAD
 SendNotification("Goober Client Has Successfully Loaded!")
@@ -352,9 +388,6 @@ local SpeedBox = MovementTab:AddLeftTabbox("Speed") do
     local AntiKBConnection
 
     Main:AddToggle("AntiKB", {Text = "Anti Speed Modify"}):OnChanged(function(event)
-        local RunService = game:GetService("RunService")
-        local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-    
         if event then
             AntiKBConnection = RunService.RenderStepped:Connect(function()
                 if not UserInputService:IsKeyDown(Enum.KeyCode.W) and
@@ -486,11 +519,11 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
 
 
     Main:AddToggle("ESPHP", {Text = "Render Health", Default = false}):AddColorPicker("ESPHPColor", {Default = Color3.fromRGB(255, 255, 255)}):OnChanged(function(event)
-        local RunService = game:GetService("RunService")
-        
         local function createHealthLabel(character, player)
-            if character:FindFirstChild("HumanoidRootPart") and character:FindFirstChild("Humanoid") then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if character:FindFirstChild("HumanoidRootPart") and humanoid then
                 if player == game.Players.LocalPlayer then return end
+    
                 local billboard = Instance.new("BillboardGui", character.HumanoidRootPart)
                 billboard.Name = "HealthDisplay"
                 billboard.Size = UDim2.new(3, 0, 0.5, 0)
@@ -506,14 +539,17 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
                 label.Font = Enum.Font.Gotham
                 label.Text = ""
     
-                local connection = RunService.RenderStepped:Connect(function()
-                    if Humanoid and Humanoid.Health > 0 then
-                        local healthPercent = math.floor((Humanoid.Health / Humanoid.MaxHealth) * 100)
+                local function updateHealth()
+                    if humanoid and humanoid.Health > 0 then
+                        local healthPercent = math.floor((humanoid.Health / humanoid.MaxHealth) * 100)
                         label.Text = string.format("%s | %d%%", player.Name, healthPercent)
                     else
                         label.Text = string.format("%s | 0%%", player.Name)
                     end
-                end)
+                end
+    
+                local connection = RunService.RenderStepped:Connect(updateHealth)
+                humanoid:GetPropertyChangedSignal("Health"):Connect(updateHealth)
     
                 healthLabels[player] = {billboard = billboard, connection = connection}
             end
@@ -548,6 +584,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         end
     end)
     
+    
     Main:AddSlider("HPSlider", {
         Text = "Hp Font Size", 
         Min = 1, 
@@ -556,7 +593,7 @@ local ESPBox = VisualTab:AddLeftTabbox("ESP") do
         Rounding = 0
     })
 
-    local npcTags = {}
+
 
     Main:AddToggle("NPCESP", {Text = "NPC ESP", Default = false}):AddColorPicker("NPCESPColor", {Default = Color3.fromRGB(0, 255, 0)}):OnChanged(function(event)
         local NPCFolder = workspace:FindFirstChild("NPCs")
@@ -978,6 +1015,9 @@ end
 local ClientTab = Window:AddTab("Client")
 local ClientBox = ClientTab:AddLeftTabbox("Client") do 
     local Main = ClientBox:AddTab("Client")
+    Main:AddButton('Unload', function() Library:Unload() end)
+    Main:AddLabel('Menu bind'):AddKeyPicker('MenuKeybind', { Default = 'RightControl', NoUI = true, Text = 'Menu keybind' })
+
 
 end
 
@@ -999,3 +1039,22 @@ local BugsBox = InfoTab:AddLeftTabbox("Bugs") do
     local Main = BugsBox:AddTab("Bugs That Are Being Fixed")
     Main:AddLabel("None ATM!")
 end
+
+
+Library.ToggleKeybind = Options.MenuKeybind
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+
+SaveManager:IgnoreThemeSettings()
+
+SaveManager:SetIgnoreIndexes({})
+
+ThemeManager:SetFolder('GooberClient')
+SaveManager:SetFolder('GooberClient/Deepwoken')
+SaveManager:LoadAutoloadConfig()
+
+SaveManager:BuildConfigSection(ClientTab)
+
+ThemeManager:ApplyToTab(ClientTab)
+
+SaveManager:LoadAutoloadConfig()
